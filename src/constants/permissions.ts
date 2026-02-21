@@ -1,0 +1,95 @@
+/**
+ * Permission keys for role-based access.
+ * Format: "module:action" or "module:submodule:action".
+ * Use these with RequirePermission and for hiding nav items.
+ */
+
+// Articles
+export const PERM_ARTICLES_LIST = "articles:list";
+export const PERM_ARTICLES_VIEW = "articles:view";
+export const PERM_ARTICLES_CREATE = "articles:create";
+export const PERM_ARTICLES_EDIT = "articles:edit";
+export const PERM_ARTICLES_DELETE = "articles:delete";
+
+// Content / CMS
+export const PERM_CONTENT_LIST = "content:list";
+export const PERM_CONTENT_VIEW = "content:view";
+export const PERM_CONTENT_EDIT = "content:edit";
+
+// SEO Metadata
+export const PERM_SEO_LIST = "seo:list";
+export const PERM_SEO_VIEW = "seo:view";
+export const PERM_SEO_CREATE = "seo:create";
+export const PERM_SEO_EDIT = "seo:edit";
+export const PERM_SEO_DELETE = "seo:delete";
+
+// Memberships
+export const PERM_MEMBERSHIPS_LIST = "memberships:list";
+export const PERM_MEMBERSHIPS_VIEW = "memberships:view";
+export const PERM_MEMBERSHIPS_CREATE = "memberships:create";
+export const PERM_MEMBERSHIPS_EDIT = "memberships:edit";
+export const PERM_MEMBERSHIPS_DELETE = "memberships:delete";
+
+// Testimonials
+export const PERM_TESTIMONIALS_LIST = "testimonials:list";
+export const PERM_TESTIMONIALS_VIEW = "testimonials:view";
+export const PERM_TESTIMONIALS_CREATE = "testimonials:create";
+export const PERM_TESTIMONIALS_EDIT = "testimonials:edit";
+export const PERM_TESTIMONIALS_DELETE = "testimonials:delete";
+
+// FAQ
+export const PERM_FAQ_LIST = "faq:list";
+export const PERM_FAQ_VIEW = "faq:view";
+export const PERM_FAQ_CREATE = "faq:create";
+export const PERM_FAQ_EDIT = "faq:edit";
+export const PERM_FAQ_DELETE = "faq:delete";
+
+// Admin (e.g. user management – future)
+export const PERM_ADMIN_ACCESS = "admin:access";
+
+// Admin users (CRUD for panel users)
+export const PERM_ADMIN_USERS_LIST = "admin_users:list";
+export const PERM_ADMIN_USERS_VIEW = "admin_users:view";
+export const PERM_ADMIN_USERS_CREATE = "admin_users:create";
+export const PERM_ADMIN_USERS_EDIT = "admin_users:edit";
+export const PERM_ADMIN_USERS_DELETE = "admin_users:delete";
+
+/** All permissions for reference / super_admin grant */
+export const ALL_PERMISSIONS = [
+  PERM_ARTICLES_LIST,
+  PERM_ARTICLES_VIEW,
+  PERM_ARTICLES_CREATE,
+  PERM_ARTICLES_EDIT,
+  PERM_ARTICLES_DELETE,
+  PERM_CONTENT_LIST,
+  PERM_CONTENT_VIEW,
+  PERM_CONTENT_EDIT,
+  PERM_SEO_LIST,
+  PERM_SEO_VIEW,
+  PERM_SEO_CREATE,
+  PERM_SEO_EDIT,
+  PERM_SEO_DELETE,
+  PERM_MEMBERSHIPS_LIST,
+  PERM_MEMBERSHIPS_VIEW,
+  PERM_MEMBERSHIPS_CREATE,
+  PERM_MEMBERSHIPS_EDIT,
+  PERM_MEMBERSHIPS_DELETE,
+  PERM_TESTIMONIALS_LIST,
+  PERM_TESTIMONIALS_VIEW,
+  PERM_TESTIMONIALS_CREATE,
+  PERM_TESTIMONIALS_EDIT,
+  PERM_TESTIMONIALS_DELETE,
+  PERM_FAQ_LIST,
+  PERM_FAQ_VIEW,
+  PERM_FAQ_CREATE,
+  PERM_FAQ_EDIT,
+  PERM_FAQ_DELETE,
+  PERM_ADMIN_ACCESS,
+  PERM_ADMIN_USERS_LIST,
+  PERM_ADMIN_USERS_VIEW,
+  PERM_ADMIN_USERS_CREATE,
+  PERM_ADMIN_USERS_EDIT,
+  PERM_ADMIN_USERS_DELETE,
+] as const;
+
+export type Permission = (typeof ALL_PERMISSIONS)[number];

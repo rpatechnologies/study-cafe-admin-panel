@@ -1,0 +1,370 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
+import Button from "../../components/ui/button/Button";
+import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PageMeta from "../../components/common/PageMeta";
+import { usersApi, type User } from "../../api/users";
+import { plansApi, type Plan } from "../../api/plans";
+
+type UserPayload = Partial<User>;
+
+export default function UserCreate() {
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [plans, setPlans] = useState<Plan[]>([]);
+
+    // Form state
+    const [formData, setFormData] = useState<UserPayload>({
+        name: "",
+        email: "",
+        phone: "",
+        membership: "", // Will be set to first plan or empty
+        status: "active",
+        // Profile
+        first_name: "",
+        last_name: "",
+        // Location
+        city: "",
+        state: "",
+        country: "India",
+        // Professional
+        designation: "",
+        company: "",
+        profession: "",
+        // Social
+        linkedin: "",
+        twitter: "",
+        facebook: "",
+        instagram: "",
+        youtube: ""
+    });
+
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const res = await plansApi.list();
+                const activePlans = res.data.filter(p => p.is_active);
+                setPlans(activePlans);
+                // Set default membership if none selected and plans exist
+                if (activePlans.length > 0 && !formData.membership) {
+                    setFormData(prev => ({ ...prev, membership: activePlans[0].slug }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch plans", err);
+            }
+        };
+        fetchPlans();
+    }, []); // Run once on mount
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            await usersApi.create(formData);
+            navigate("/users");
+        } catch (err) {
+            console.error("Failed to create user", err);
+            alert("Failed to create user");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <>
+            <PageMeta
+                title="Create User | StudyCafe Admin"
+                description="Add new user (student)"
+            />
+            <PageBreadcrumb pageTitle="Create User" />
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Account Info */}
+                    <div>
+                        <h3 className="mb-5 text-lg font-semibold text-gray-900 dark:text-white">
+                            Account Information
+                        </h3>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div>
+                                <Label>Full Name <span className="text-error-500">*</span></Label>
+                                <Input
+                                    name="name"
+                                    value={formData.name || ""}
+                                    onChange={handleChange}
+                                    placeholder="John Doe"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label>Email <span className="text-error-500">*</span></Label>
+                                <Input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email || ""}
+                                    onChange={handleChange}
+                                    placeholder="john@example.com"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label>Phone</Label>
+                                <Input
+                                    name="phone"
+                                    value={formData.phone || ""}
+                                    onChange={handleChange}
+                                    placeholder="+91 9876543210"
+                                />
+                            </div>
+                            <div>
+                                <Label>Membership</Label>
+                                <div className="relative">
+                                    <select
+                                        name="membership"
+                                        value={formData.membership || ""}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
+                                    >
+                                        <option value="">Select Plan</option>
+                                        {plans.map((plan) => (
+                                            <option key={plan.id} value={plan.slug}>
+                                                {plan.name} ({plan.currency} {plan.price})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <Label>Status</Label>
+                                <div className="relative">
+                                    <select
+                                        name="status"
+                                        value={formData.status || "active"}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="suspended">Suspended</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Personal Information */}
+                    <div>
+                        <h4 className="mb-4 text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
+                            Personal Information
+                        </h4>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            <div className="md:col-span-2 lg:col-span-1">
+                                <Label>Display Name</Label>
+                                <Input
+                                    type="text"
+                                    name="display_name"
+                                    value={formData.display_name || ""}
+                                    onChange={handleChange}
+                                    placeholder="Full Display Name"
+                                />
+                            </div>
+                            <div>
+                                <Label>First Name</Label>
+                                <Input
+                                    type="text"
+                                    name="first_name"
+                                    value={formData.first_name || ""}
+                                    onChange={handleChange}
+                                    placeholder="First Name"
+                                />
+                            </div>
+                            <div>
+                                <Label>Last Name</Label>
+                                <Input
+                                    type="text"
+                                    name="last_name"
+                                    value={formData.last_name || ""}
+                                    onChange={handleChange}
+                                    placeholder="Last Name"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Location */}
+                    <div>
+                        <h4 className="mb-4 text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
+                            Location
+                        </h4>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div>
+                                <Label>City</Label>
+                                <Input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city || ""}
+                                    onChange={handleChange}
+                                    placeholder="City"
+                                />
+                            </div>
+                            <div>
+                                <Label>State</Label>
+                                <Input
+                                    type="text"
+                                    name="state"
+                                    value={formData.state || ""}
+                                    onChange={handleChange}
+                                    placeholder="State"
+                                />
+                            </div>
+                            <div>
+                                <Label>Country</Label>
+                                <Input
+                                    type="text"
+                                    name="country"
+                                    value={formData.country || ""}
+                                    onChange={handleChange}
+                                    placeholder="Country"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Professional Details */}
+                    <div>
+                        <h4 className="mb-4 text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
+                            Professional Details
+                        </h4>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div>
+                                <Label>Designation</Label>
+                                <Input
+                                    type="text"
+                                    name="designation"
+                                    value={formData.designation || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Software Engineer"
+                                />
+                            </div>
+                            <div>
+                                <Label>Company</Label>
+                                <Input
+                                    type="text"
+                                    name="company"
+                                    value={formData.company || ""}
+                                    onChange={handleChange}
+                                    placeholder="Company Name"
+                                />
+                            </div>
+                            <div>
+                                <Label>Profession</Label>
+                                <Input
+                                    type="text"
+                                    name="profession"
+                                    value={formData.profession || ""}
+                                    onChange={handleChange}
+                                    placeholder="Profession"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Social Links */}
+                    <div>
+                        <h4 className="mb-4 text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
+                            Social Links
+                        </h4>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div>
+                                <Label>LinkedIn</Label>
+                                <Input
+                                    type="url"
+                                    name="linkedin"
+                                    value={formData.linkedin || ""}
+                                    onChange={handleChange}
+                                    placeholder="https://linkedin.com/in/username"
+                                />
+                            </div>
+                            <div>
+                                <Label>Twitter (X)</Label>
+                                <Input
+                                    type="url"
+                                    name="twitter"
+                                    value={formData.twitter || ""}
+                                    onChange={handleChange}
+                                    placeholder="https://twitter.com/username"
+                                />
+                            </div>
+                            <div>
+                                <Label>Facebook</Label>
+                                <Input
+                                    type="url"
+                                    name="facebook"
+                                    value={formData.facebook || ""}
+                                    onChange={handleChange}
+                                    placeholder="https://facebook.com/username"
+                                />
+                            </div>
+                            <div>
+                                <Label>Instagram</Label>
+                                <Input
+                                    type="url"
+                                    name="instagram"
+                                    value={formData.instagram || ""}
+                                    onChange={handleChange}
+                                    placeholder="https://instagram.com/username"
+                                />
+                            </div>
+                            <div>
+                                <Label>YouTube</Label>
+                                <Input
+                                    type="url"
+                                    name="youtube"
+                                    value={formData.youtube || ""}
+                                    onChange={handleChange}
+                                    placeholder="https://youtube.com/@channel"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div className="flex justify-end gap-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => navigate("/users")}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? "Creating..." : "Create User"}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </>
+    );
+}

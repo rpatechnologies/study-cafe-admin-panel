@@ -1,0 +1,110 @@
+/**
+ * useDataTable — server-side state for DataTable.
+ * Fetches when page, limit, search, sortBy, or sortOrder change.
+ */
+
+import { useState, useEffect, useCallback } from "react";
+import type {
+  DataTableMeta,
+  DataTableFetchParams,
+  DataTableFetchFn,
+  UseDataTableReturn,
+} from "./DataTable.types";
+
+const DEFAULT_META: DataTableMeta = {
+  total: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+export function useDataTable<T = Record<string, unknown>>(
+  fetchData: DataTableFetchFn<T>,
+  options: {
+    initialPageSize?: number;
+    initialSortBy?: string;
+    initialSortOrder?: "ASC" | "DESC";
+  } = {}
+): UseDataTableReturn<T> {
+  const {
+    initialPageSize = 10,
+    initialSortBy = "",
+    initialSortOrder = "DESC",
+  } = options;
+
+  const [data, setData] = useState<T[]>([]);
+  const [meta, setMeta] = useState<DataTableMeta | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(initialPageSize);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState(initialSortBy);
+  const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">(initialSortOrder);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: DataTableFetchParams = {
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+      };
+      const result = await fetchData(params);
+      setData(result.data ?? []);
+      setMeta(result.meta ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setData([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData, page, limit, search, sortBy, sortOrder]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const setSort = useCallback((by: string, order: "ASC" | "DESC") => {
+    setSortBy(by);
+    setSortOrder(order);
+    setPage(1);
+  }, []);
+
+  const handleSetPage = useCallback((p: number) => {
+    setPage(() => Math.max(1, p));
+  }, []);
+
+  const handleSetLimit = useCallback((l: number) => {
+    setLimit(l);
+    setPage(1);
+  }, []);
+
+  const handleSetSearch = useCallback((s: string) => {
+    setSearch(s);
+    setPage(1);
+  }, []);
+
+  return {
+    data,
+    meta: meta ?? DEFAULT_META,
+    loading,
+    error,
+    page,
+    limit,
+    search,
+    sortBy,
+    sortOrder,
+    setPage: handleSetPage,
+    setLimit: handleSetLimit,
+    setSearch: handleSetSearch,
+    setSort,
+    refetch: load,
+  };
+}

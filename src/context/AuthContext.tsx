@@ -1,0 +1,150 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { authApi } from "../api/auth";
+import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/authStorage";
+import type { AdminUser, LoginCredentials, PersistedAuth } from "../types/auth";
+
+interface AuthContextValue {
+  user: AdminUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isInitialized: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasRole: (role: string) => boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const isAuthenticated = Boolean(token && user);
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.login(credentials);
+      const token = res.token ?? (res as { accessToken?: string }).accessToken;
+      if (!token || !res.user) throw new Error("Invalid login response");
+      const user = {
+        ...res.user,
+        id: String(res.user.id),
+        permissions: res.user.permissions ?? [],
+      };
+      const payload: PersistedAuth = {
+        token,
+        user,
+        expiresAt:
+          res.expiresIn != null
+            ? Date.now() + res.expiresIn * 1000
+            : undefined,
+      };
+      setStoredAuth(payload);
+      setToken(token);
+      setUser(user);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await authApi.logout();
+    } finally {
+      clearStoredAuth();
+      setToken(null);
+      setUser(null);
+      setIsLoading(false);
+    }
+  }, []);
+
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (!user) return false;
+      if (user.role === "super_admin") return true;
+      return user.permissions?.includes(permission) ?? false;
+    },
+    [user]
+  );
+
+  const hasAnyPermission = useCallback(
+    (permissions: string[]): boolean =>
+      permissions.some((p) => hasPermission(p)),
+    [hasPermission]
+  );
+
+  const hasRole = useCallback(
+    (role: string): boolean => {
+      if (!user) return false;
+      if (user.role === role) return true;
+      return user.roles?.includes(role as AdminUser["role"]) ?? false;
+    },
+    [user]
+  );
+
+  useEffect(() => {
+    const stored = getStoredAuth();
+    if (stored) {
+      setToken(stored.token);
+      setUser(stored.user);
+    }
+    setIsInitialized(true);
+    setIsLoading(false);
+  }, []);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      token,
+      isAuthenticated,
+      isInitialized,
+      isLoading,
+      login,
+      logout,
+      hasPermission,
+      hasAnyPermission,
+      hasRole,
+    }),
+    [
+      user,
+      token,
+      isAuthenticated,
+      isInitialized,
+      isLoading,
+      login,
+      logout,
+      hasPermission,
+      hasAnyPermission,
+      hasRole,
+    ]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (ctx == null) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return ctx;
+}
+
+export function useAuthOptional(): AuthContextValue | null {
+  return useContext(AuthContext);
+}
