@@ -4,7 +4,7 @@
  */
 
 import { forwardRef, useImperativeHandle, useMemo } from "react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../ui/table";
 import { useDataTable } from "./useDataTable";
 import { DataTablePagination } from "./DataTablePagination";
 import { DataTableToolbar } from "./DataTableToolbar";

@@ -4,16 +4,16 @@
 
 import { forwardRef } from "react";
 import { Link } from "react-router";
-import { DataTable, type DataTableRef } from "../../../components/data-table";
-import Badge from "../../../components/ui/badge/Badge";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../../icons";
-import { RequirePermission } from "../../../components/auth/RequirePermission";
+import { DataTable, type DataTableRef } from "./data-table";
+import Badge from "../ui/badge/Badge";
+import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { RequirePermission } from "../auth/RequirePermission";
 import {
   PERM_ARTICLES_EDIT,
   PERM_ARTICLES_DELETE,
-} from "../../../constants/permissions";
-import { decodeSlugForDisplay } from "../../../lib/slug";
-import { fetchArticlesPaginated, type ArticleRecord } from "../../../api/articles";
+} from "../../constants/permissions";
+import { decodeSlugForDisplay } from "../../lib/slug";
+import { fetchArticlesPaginated, type ArticleRecord } from "../../api/articles";
 
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;

@@ -11,9 +11,10 @@ export default function HomeContent() {
   const [hero, setHero] = useState({
     title: "One Stop Solution For CA CS CWA",
     subtitle: "Direct Indirect Tax GST Business News",
-    description: "One Stop Solution For CA CS CWA Direct Indirect Tax GST Business News",
-    ctaText: "Explore Courses",
-    ctaLink: "/courses",
+    description:
+      "One Stop Solution For CA CS CWA Direct Indirect Tax GST Business News",
+    ctaText: "View Memberships",
+    ctaLink: "/plans",
     imageUrl: "",
     backgroundImageUrl: "",
   });
@@ -94,16 +95,29 @@ export default function HomeContent() {
                 placeholder="/courses"
               />
             </div>
-            <ImageUpload
-              value={hero.imageUrl ?? ""}
-              onChange={(imageUrl) => setHero((prev) => ({ ...prev, imageUrl }))}
-              placeholder="Drop or select image"
-            />
-            <ImageUpload
-              value={hero.backgroundImageUrl ?? ""}
-              onChange={(backgroundImageUrl) => setHero((prev) => ({ ...prev, backgroundImageUrl }))}
-              placeholder="Drop or select image"
-            />
+            <div>
+              <Label>Hero background image</Label>
+
+              <ImageUpload
+                value={hero.imageUrl ?? ""}
+                onChange={(imageUrl) =>
+                  setHero((prev) => ({ ...prev, imageUrl }))
+                }
+                placeholder="Drop or select image"
+              />
+            </div>
+
+            <div>
+              <Label>Hero image</Label>
+
+              <ImageUpload
+                value={hero.backgroundImageUrl ?? ""}
+                onChange={(backgroundImageUrl) =>
+                  setHero((prev) => ({ ...prev, backgroundImageUrl }))
+                }
+                placeholder="Drop or select image"
+              />
+            </div>
           </div>
         </div>
 

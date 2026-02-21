@@ -8,8 +8,8 @@ import { RequirePermission } from "../../components/auth/RequirePermission";
 import { AccessDenied } from "../../components/auth/AccessDenied";
 import { PERM_ARTICLES_LIST, PERM_ARTICLES_CREATE } from "../../constants/permissions";
 import { articlesApi, type ArticleRecord } from "../../api/articles";
-import { ArticlesTable } from "./components/ArticlesTable";
-import type { DataTableRef } from "../../components/data-table";
+import { ArticlesTable } from "../../components/tables";
+import type { DataTableRef } from "../../components/tables/data-table";
 
 export default function ArticleList() {
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ContentBlockType } from "../blocks/types";
+import type { ContentBlockType } from "../types";
 
 export interface BlockTypeOption {
   type: ContentBlockType;

@@ -6,7 +6,7 @@
  */
 
 import { createCrudApi } from "./apiFactory";
-import type { DataTableFetchParams, DataTableFetchResult } from "../components/data-table";
+import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 
 export interface User {
     id: string;

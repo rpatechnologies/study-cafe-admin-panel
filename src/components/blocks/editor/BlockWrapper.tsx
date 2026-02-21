@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { ContentBlock } from "../blocks/types";
+import type { ContentBlock } from "../types";
 
 interface BlockWrapperProps {
   block: ContentBlock;

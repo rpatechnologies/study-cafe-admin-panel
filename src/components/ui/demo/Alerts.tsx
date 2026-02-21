@@ -1,14 +1,14 @@
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import Alert from "../../components/ui/alert/Alert";
-import PageMeta from "../../components/common/PageMeta";
+import PageBreadcrumb from "../../common/PageBreadCrumb";
+import ComponentCard from "../../common/ComponentCard";
+import Alert from "../alert/Alert";
+import PageMeta from "../../common/PageMeta";
 
 export default function Alerts() {
   return (
     <>
       <PageMeta
-title="Alerts | StudyCafe Admin"
-      description="Alert components for StudyCafe Admin - studycafe.in management console"
+        title="Alerts | StudyCafe Admin"
+        description="Alert components for StudyCafe Admin - studycafe.in management console"
       />
       <PageBreadcrumb pageTitle="Alerts" />
       <div className="space-y-5 sm:space-y-6">

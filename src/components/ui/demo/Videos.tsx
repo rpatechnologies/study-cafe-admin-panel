@@ -1,17 +1,17 @@
-import ComponentCard from "../../components/common/ComponentCard";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import PageMeta from "../../components/common/PageMeta";
-import FourIsToThree from "../../components/ui/videos/FourIsToThree";
-import OneIsToOne from "../../components/ui/videos/OneIsToOne";
-import SixteenIsToNine from "../../components/ui/videos/SixteenIsToNine";
-import TwentyOneIsToNine from "../../components/ui/videos/TwentyOneIsToNine";
+import ComponentCard from "../../common/ComponentCard";
+import PageBreadcrumb from "../../common/PageBreadCrumb";
+import PageMeta from "../../common/PageMeta";
+import FourIsToThree from "../videos/FourIsToThree";
+import OneIsToOne from "../videos/OneIsToOne";
+import SixteenIsToNine from "../videos/SixteenIsToNine";
+import TwentyOneIsToNine from "../videos/TwentyOneIsToNine";
 
 export default function Videos() {
   return (
     <>
       <PageMeta
-title="Videos | StudyCafe Admin"
-      description="Video components for StudyCafe Admin - studycafe.in management console"
+        title="Videos | StudyCafe Admin"
+        description="Video components for StudyCafe Admin - studycafe.in management console"
       />
       <PageBreadcrumb pageTitle="Videos" />
       <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-2">

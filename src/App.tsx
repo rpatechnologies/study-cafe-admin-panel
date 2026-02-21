@@ -5,27 +5,25 @@ import {
   Route,
   Outlet,
 } from "react-router";
-import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
+import SignIn from "./pages/auth-pages/SignIn";
+import SignUp from "./pages/auth-pages/SignUp";
+import NotFound from "./pages/other-page/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { RedirectIfAuthenticated } from "./components/auth/RedirectIfAuthenticated";
 import { RequirePermissionRoute } from "./components/auth/RequirePermission";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
+import Videos from "./components/ui/demo/Videos";
+import Images from "./components/ui/demo/Images";
+import Alerts from "./components/ui/demo/Alerts";
+import Badges from "./components/ui/demo/Badges";
+import Avatars from "./components/ui/demo/Avatars";
+import Buttons from "./components/ui/demo/Buttons";
+import LineChart from "./components/charts/LineChart";
+import BarChart from "./components/charts/BarChart";
+import BasicTablesPage from "./components/tables/BasicTablesPage";
+import FormElements from "./components/form/FormElements";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
+import Home from "./pages/dashboard/Home";
 import HomeContent from "./pages/cms/HomeContent";
 import AboutContent from "./pages/cms/AboutContent";
 import ContactContent from "./pages/cms/ContactContent";
@@ -196,15 +194,11 @@ const router = createBrowserRouter(
             <Route index element={<UserEdit />} />
           </Route>
 
-          {/* Others Page */}
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/blank" element={<Blank />} />
-
           {/* Forms */}
           <Route path="/form-elements" element={<FormElements />} />
 
           {/* Tables */}
-          <Route path="/basic-tables" element={<BasicTables />} />
+          <Route path="/basic-tables" element={<BasicTablesPage />} />
 
           {/* Ui Elements */}
           <Route path="/alerts" element={<Alerts />} />

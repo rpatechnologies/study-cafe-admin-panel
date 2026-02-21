@@ -3,6 +3,8 @@ import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
+import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
+import RichTextEditor from "../../components/form/RichTextEditor";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
 
@@ -221,54 +223,34 @@ export default function MembershipForm({
           {!optionsLoading && (courses.length > 0 || courseCats.length > 0) && (
             <div className="grid gap-4 sm:grid-cols-2">
               {courses.length > 0 && (
-                <div>
-                  <Label>Courses included (optional)</Label>
-                  <select
-                    multiple
-                    value={formData.course_ids.map(String)}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions, (o) => Number(o.value));
-                      setFormData((prev) => ({ ...prev, course_ids: selected }));
-                    }}
-                    className="w-full rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 min-h-[120px]"
-                  >
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple.</p>
-                </div>
+                <ChipMultiSelect
+                  label="Courses included (optional)"
+                  options={courses.map((c) => ({ id: c.id, name: c.title }))}
+                  value={formData.course_ids}
+                  onChange={(ids) => setFormData((prev) => ({ ...prev, course_ids: ids }))}
+                  placeholder="Search or select courses…"
+                />
               )}
               {courseCats.length > 0 && (
-                <div>
-                  <Label>Categories included – all courses under these (optional)</Label>
-                  <select
-                    multiple
-                    value={formData.course_cat_ids.map(String)}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions, (o) => Number(o.value));
-                      setFormData((prev) => ({ ...prev, course_cat_ids: selected }));
-                    }}
-                    className="w-full rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 min-h-[120px]"
-                  >
-                    {courseCats.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple.</p>
-                </div>
+                <ChipMultiSelect
+                  label="Categories included – all courses under these (optional)"
+                  options={courseCats.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))}
+                  value={formData.course_cat_ids}
+                  onChange={(ids) => setFormData((prev) => ({ ...prev, course_cat_ids: ids }))}
+                  placeholder="Search or select categories…"
+                />
               )}
             </div>
           )}
           <div>
             <Label>Features (one per line)</Label>
-            <TextArea
-              rows={4}
+            <RichTextEditor
               value={formData.features}
-              onChange={(value) =>
-                setFormData((prev) => ({ ...prev, features: value }))
+              onChange={(html) =>
+                setFormData((prev) => ({ ...prev, features: html }))
               }
-              placeholder="All courses&#10;Certificates&#10;Support"
+              placeholder="e.g. Certification Available, Access on mobile or Computer, Lifetime Validity…"
+              minHeight="120px"
             />
           </div>
           <div>

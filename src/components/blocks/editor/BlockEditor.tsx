@@ -11,7 +11,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import BlockWrapper from "./BlockWrapper";
 import BlockTypePicker from "./BlockTypePicker";
-import type { ContentBlock, ContentBlockData, ContentBlockType } from "../blocks/types";
+import type { ContentBlock, ContentBlockData, ContentBlockType } from "../types";
 
 function generateBlockId() {
   return crypto.randomUUID?.() ?? `block-${Date.now()}-${Math.random().toString(36).slice(2)}`;

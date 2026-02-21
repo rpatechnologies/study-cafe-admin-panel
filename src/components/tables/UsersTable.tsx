@@ -4,15 +4,15 @@
 
 import { forwardRef } from "react";
 import { Link } from "react-router";
-import { DataTable, type DataTableRef } from "../../../components/data-table";
-import Badge from "../../../components/ui/badge/Badge";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../../icons";
-import { RequirePermission } from "../../../components/auth/RequirePermission";
+import { DataTable, type DataTableRef } from "./data-table";
+import Badge from "../ui/badge/Badge";
+import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { RequirePermission } from "../auth/RequirePermission";
 import {
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
-} from "../../../constants/permissions";
-import { fetchUsersPaginated, type User } from "../../../api/users";
+} from "../../constants/permissions";
+import { fetchUsersPaginated, type User } from "../../api/users";
 
 export interface UsersTableProps {
   onDeleteClick?: (user: User) => void;

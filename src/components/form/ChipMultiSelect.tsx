@@ -99,7 +99,7 @@ export function ChipMultiSelect({
   };
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="relative w-full">
       <Label>{label}</Label>
       <div
         className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-brand-500 ${
@@ -141,7 +141,7 @@ export function ChipMultiSelect({
       </div>
       {open && availableOptions.length > 0 && (
         <ul
-          className="z-10 mt-1 max-h-[220px] overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[220px] overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
           role="listbox"
         >
           {availableOptions.map((opt, i) => (
@@ -164,7 +164,7 @@ export function ChipMultiSelect({
         </ul>
       )}
       {open && query && availableOptions.length === 0 && (
-        <p className="mt-1 px-2 text-xs text-gray-500 dark:text-gray-400">No matches. Type to search.</p>
+        <p className="absolute left-0 right-0 top-full z-20 mt-1 px-2 text-xs text-gray-500 dark:text-gray-400">No matches. Type to search.</p>
       )}
     </div>
   );

@@ -5,7 +5,7 @@
 
 import { createCrudApi } from "./apiFactory";
 import { api } from "./axios";
-import type { DataTableFetchParams, DataTableFetchResult } from "../components/data-table";
+import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 
 /** Resolved "Also Read" article from [related id="..."] shortcodes in legacy content */
 export interface RelatedArticle {

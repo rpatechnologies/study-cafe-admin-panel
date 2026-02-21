@@ -6,8 +6,8 @@ import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_ADMIN_USERS_LIST, PERM_ADMIN_USERS_CREATE } from "../../constants/permissions";
 import { usersApi, type User } from "../../api/users";
-import { UsersTable } from "./components/UsersTable";
-import type { DataTableRef } from "../../components/data-table";
+import { UsersTable } from "../../components/tables";
+import type { DataTableRef } from "../../components/tables/data-table";
 
 export default function UserList() {
   return (
