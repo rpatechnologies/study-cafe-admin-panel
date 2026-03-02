@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { uploadImage } from "../../api/uploads";
 
 const IMAGE_ACCEPT = {
   "image/png": [".png"],
@@ -26,16 +27,24 @@ export default function ImageUpload({
   className = "",
   disabled = false,
 }: ImageUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        if (typeof result === "string") onChange(result);
-      };
-      reader.readAsDataURL(file);
+      setError(null);
+      setUploading(true);
+      try {
+        const { url } = await uploadImage(file);
+        onChange(url);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Upload failed";
+        setError(message);
+      } finally {
+        setUploading(false);
+      }
     },
     [onChange]
   );
@@ -44,7 +53,7 @@ export default function ImageUpload({
     onDrop,
     accept: IMAGE_ACCEPT,
     maxFiles: 1,
-    disabled,
+    disabled: disabled || uploading,
     noClick: false,
     noKeyboard: false,
   });
@@ -66,20 +75,32 @@ export default function ImageUpload({
         className={`
           relative min-h-[140px] cursor-pointer rounded-lg border-2 border-dashed transition
           ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
-          ${
-            isDragActive
-              ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10"
-              : "border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
+          ${isDragActive
+            ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10"
+            : "border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
           }
+          ${uploading ? "pointer-events-none opacity-70" : ""}
         `}
       >
         <input {...getInputProps()} />
+        {uploading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/40 text-sm font-medium text-white">
+            Uploading…
+          </div>
+        )}
+        {error && (
+          <p className="absolute left-2 right-2 top-2 z-10 rounded bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+            {error}
+          </p>
+        )}
         {value ? (
           <div className="relative flex min-h-[140px] items-center justify-center p-4">
             <img
               src={value}
               alt="Preview"
               className="max-h-40 max-w-full rounded-lg object-contain"
+              referrerPolicy="no-referrer"
+              loading="lazy"
             />
             {!disabled && (
               <button

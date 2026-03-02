@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
 import { useMemo } from "react";
-import { ChatIcon, ChevronDownIcon, DocsIcon, FileIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, PageIcon, UserIcon } from "../icons";
+import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, PageIcon, UserIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -39,6 +39,24 @@ const navItems: NavItem[] = [
       { name: "Create", path: "/articles/create", requiredPermission: ["articles:create"] },
     ],
     requiredPermission: ["articles:list", "articles:view", "articles:create", "articles:edit", "articles:delete"],
+  },
+  {
+    icon: <FolderIcon />,
+    name: "Courses",
+    subItems: [
+      { name: "List", path: "/courses", requiredPermission: ["admin:access"] },
+      { name: "Create", path: "/courses/create", requiredPermission: ["admin:access"] },
+      { name: "Page Settings", path: "/courses/settings", requiredPermission: ["admin:access"] },
+    ],
+    requiredPermission: ["admin:access"],
+  },
+  {
+    icon: <DollarLineIcon />,
+    name: "Orders",
+    subItems: [
+      { name: "List", path: "/orders", requiredPermission: ["admin:access"] },
+    ],
+    requiredPermission: ["admin:access"],
   },
   {
     icon: <GroupIcon />,

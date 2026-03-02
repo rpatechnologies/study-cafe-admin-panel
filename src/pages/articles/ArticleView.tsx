@@ -113,8 +113,8 @@ export default function ArticleView() {
             )}
             {article.author_id != null && (
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Author ID</p>
-                <p className="text-gray-800 dark:text-white/90">{article.author_id}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Author</p>
+                <p className="text-gray-800 dark:text-white/90">{article.author_name}</p>
               </div>
             )}
             {article.meta_description && (
@@ -123,28 +123,42 @@ export default function ArticleView() {
                 <p className="text-gray-800 dark:text-white/90">{article.meta_description}</p>
               </div>
             )}
-            {article.tag_ids && article.tag_ids.length > 0 && (
+            {(article.tags?.length ?? article.tag_ids?.length ?? 0) > 0 && (
               <div>
-                <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Tag IDs</p>
+                <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Tags</p>
                 <div className="flex flex-wrap gap-2">
-                  {article.tag_ids.map((tid) => (
-                    <span key={tid} className="rounded-full bg-gray-100 px-2.5 py-1 text-sm dark:bg-gray-800">
-                      {tid}
-                    </span>
-                  ))}
+                  {(article.tags?.length
+                    ? article.tags.map((t) => (
+                        <span key={t.id} className="rounded-full bg-gray-100 px-2.5 py-1 text-sm dark:bg-gray-800">
+                          {t.name || t.id}
+                        </span>
+                      ))
+                    : article.tag_ids!.map((tid) => (
+                        <span key={tid} className="rounded-full bg-gray-100 px-2.5 py-1 text-sm dark:bg-gray-800">
+                          {tid}
+                        </span>
+                      ))
+                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
-
         {article.thumbnail_url && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Featured Image</h3>
-            <img src={article.thumbnail_url} alt="" className="max-w-full rounded-lg" />
+            <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+              Featured Image
+            </h3>
+
+            <img
+              src={article.thumbnail_url}
+              alt="Featured"
+              className="max-w-full rounded-lg"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+            />
           </div>
         )}
-
         {hasBody && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Content</h3>

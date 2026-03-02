@@ -61,6 +61,14 @@ import UserList from "./pages/users/UserList";
 import UserCreate from "./pages/users/UserCreate";
 import UserEdit from "./pages/users/UserEdit";
 import UserView from "./pages/users/UserView";
+import CourseList from "./pages/courses/CourseList";
+import CourseView from "./pages/courses/CourseView";
+import CourseCreate from "./pages/courses/CourseCreate";
+import CourseEdit from "./pages/courses/CourseEdit";
+import CoursePageSettings from "./pages/courses/CoursePageSettings";
+import CoursePreview from "./pages/courses/CoursePreview";
+import OrderList from "./pages/orders/OrderList";
+import OrderView from "./pages/orders/OrderView";
 
 function RootLayout() {
   return (
@@ -122,6 +130,34 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/seo-metadata/:id/edit" element={<RequirePermissionRoute permissions={["seo:edit"]} />}>
             <Route index element={<SEOMetadataEdit />} />
+          </Route>
+
+          {/* Courses */}
+          <Route path="/courses" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseList />} />
+          </Route>
+          <Route path="/courses/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseCreate />} />
+          </Route>
+          <Route path="/courses/:id" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseView />} />
+          </Route>
+          <Route path="/courses/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseEdit />} />
+          </Route>
+          <Route path="/courses/settings" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CoursePageSettings />} />
+          </Route>
+          <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CoursePreview />} />
+          </Route>
+
+          {/* Orders */}
+          <Route path="/orders" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<OrderList />} />
+          </Route>
+          <Route path="/orders/:orderId" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<OrderView />} />
           </Route>
 
           {/* Memberships */}

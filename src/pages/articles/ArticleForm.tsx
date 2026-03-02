@@ -156,6 +156,7 @@ export default function ArticleForm({
       state: {
         [PREVIEW_STATE_KEY]: formData,
         returnPath,
+        taxonomyOptions: taxonomyOptions ?? undefined,
       },
     });
   };

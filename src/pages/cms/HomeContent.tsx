@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
@@ -6,28 +6,51 @@ import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import TextArea from "../../components/form/input/TextArea";
 import ImageUpload from "../../components/form/ImageUpload";
+import { fetchCmsPageBySlug, updateCmsPage } from "../../api/cmsPages";
+
+const SLUG = "home";
+
+const defaultHero = {
+  title: "One Stop Solution For CA CS CWA",
+  subtitle: "Direct Indirect Tax GST Business News",
+  description:
+    "One Stop Solution For CA CS CWA Direct Indirect Tax GST Business News",
+  ctaText: "View Memberships",
+  ctaLink: "/plans",
+  imageUrl: "",
+  backgroundImageUrl: "",
+};
+const defaultStats = {
+  students: "12,847",
+  courses: "48",
+  articles: "2,356",
+  others: "1,892",
+};
 
 export default function HomeContent() {
-  const [hero, setHero] = useState({
-    title: "One Stop Solution For CA CS CWA",
-    subtitle: "Direct Indirect Tax GST Business News",
-    description:
-      "One Stop Solution For CA CS CWA Direct Indirect Tax GST Business News",
-    ctaText: "View Memberships",
-    ctaLink: "/plans",
-    imageUrl: "",
-    backgroundImageUrl: "",
-  });
-  const [stats, setStats] = useState({
-    students: "12,847",
-    courses: "48",
-    articles: "2,356",
-    others: "1,892",
-  });
+  const [hero, setHero] = useState(defaultHero);
+  const [stats, setStats] = useState(defaultStats);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCmsPageBySlug(SLUG)
+      .then((data) => {
+        if (cancelled || !data?.meta) return;
+        const m = data.meta as Record<string, unknown>;
+        if (m.hero && typeof m.hero === "object") setHero({ ...defaultHero, ...(m.hero as object) });
+        if (m.stats && typeof m.stats === "object") setStats({ ...defaultStats, ...(m.stats as object) });
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Save", { hero, stats });
+    setSaving(true);
+    updateCmsPage(SLUG, { title: "Home", meta: { hero, stats } })
+      .then(() => { setSaving(false); })
+      .catch(() => { setSaving(false); });
   };
 
   return (
@@ -178,8 +201,8 @@ export default function HomeContent() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} size="sm">
-            Save Changes
+          <Button onClick={handleSave} size="sm" disabled={loading || saving}>
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>

@@ -37,6 +37,28 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
   function ArticlesTable({ onDeleteClick }, ref) {
     const columns = [
       {
+        key: "image",
+        header: "Image",
+        sortable: false,
+        render: (row: ArticleRecord) => (
+          <div className="h-10 w-16 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+            {row.thumbnail_url ? (
+              <img
+                src={row.thumbnail_url}
+                alt={row.title}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
+                No IMG
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
         key: "title",
         header: "Title",
         sortable: true,
@@ -52,10 +74,10 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         ),
       },
       {
-        key: "author_id",
+        key: "author_name",
         header: "Author",
         sortable: false,
-        render: (row: ArticleRecord) => row.author_id ?? "—",
+        render: (row: ArticleRecord) => row.author_name ?? "—",
       },
       {
         key: "status",

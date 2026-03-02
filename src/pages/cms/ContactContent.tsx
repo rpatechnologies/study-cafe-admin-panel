@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
@@ -6,23 +6,61 @@ import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
 import RichTextEditor from "../../components/form/RichTextEditor";
 import Button from "../../components/ui/button/Button";
+import { fetchCmsPageBySlug, updateCmsPage } from "../../api/cmsPages";
+
+const SLUG = "contact";
+
+const defaultContent = {
+  title: "Contact Us",
+  heading: "Get In Touch",
+  description:
+    "Have questions or feedback? Reach out to us. We'd love to hear from you.",
+  email: "info@studycafe.in",
+  phone: "+91 1234567890",
+  address: "Studycafe Private Limited, New Delhi, India",
+  submitButtonText: "Send Message",
+};
 
 export default function ContactContent() {
-  const [content, setContent] = useState({
-    title: "Contact Us",
-    heading: "Get In Touch",
-    description:
-      "Have questions or feedback? Reach out to us. We'd love to hear from you.",
-    email: "info@studycafe.in",
-    phone: "+91 1234567890",
-    address:
-      "Studycafe Private Limited, New Delhi, India",
-    submitButtonText: "Send Message",
-  });
+  const [content, setContent] = useState(defaultContent);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCmsPageBySlug(SLUG)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const m = (data.meta || {}) as Record<string, unknown>;
+        setContent({
+          title: data.title ?? defaultContent.title,
+          heading: (m.heading as string) ?? defaultContent.heading,
+          description: data.content ?? defaultContent.description,
+          email: (m.email as string) ?? defaultContent.email,
+          phone: (m.phone as string) ?? defaultContent.phone,
+          address: (m.address as string) ?? defaultContent.address,
+          submitButtonText: (m.submitButtonText as string) ?? defaultContent.submitButtonText,
+        });
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Save", content);
+    setSaving(true);
+    updateCmsPage(SLUG, {
+      title: content.title,
+      content: content.description,
+      meta: {
+        heading: content.heading,
+        email: content.email,
+        phone: content.phone,
+        address: content.address,
+        submitButtonText: content.submitButtonText,
+      },
+    })
+      .then(() => { setSaving(false); })
+      .catch(() => { setSaving(false); });
   };
 
   return (
@@ -123,8 +161,8 @@ export default function ContactContent() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} size="sm">
-            Save Changes
+          <Button onClick={handleSave} size="sm" disabled={loading || saving}>
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>

@@ -26,10 +26,22 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 /**
- * Response interceptor: on 401 clear auth and redirect to sign-in.
+ * Response interceptor: unwraps backend envelopes and handles 401s.
  */
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Unwrap standard envelope: { success: true, data: ..., meta?: ... }
+    if (response.data && typeof response.data === "object" && response.data.success === true && "data" in response.data) {
+      if ("meta" in response.data) {
+        // Flatten meta properties into root for apiFactory compatibility
+        response.data = { data: response.data.data, ...response.data.meta };
+      } else {
+        // Standard payload unwrap
+        response.data = response.data.data;
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
       clearStoredAuth();

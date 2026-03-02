@@ -1,26 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import RichTextEditor from "../../components/form/RichTextEditor";
 import Button from "../../components/ui/button/Button";
+import { fetchCmsPageBySlug, updateCmsPage } from "../../api/cmsPages";
+
+const SLUG = "about";
+
+const defaultContent = {
+  title: "About StudyCafe",
+  heading: "One Stop Solution For CA CS CWA",
+  description:
+    "Studycafe is your trusted platform for CA, CS, CWA exam preparation, Direct & Indirect Tax, GST, Income Tax, and Business News. We provide quality content, courses, and resources.",
+  mission:
+    "To empower professionals and students with the latest updates and knowledge in finance, taxation, and corporate laws.",
+  vision:
+    "To be the most trusted source for CA, CS, CWA and tax-related content in India.",
+};
 
 export default function AboutContent() {
-  const [content, setContent] = useState({
-    title: "About StudyCafe",
-    heading: "One Stop Solution For CA CS CWA",
-    description:
-      "Studycafe is your trusted platform for CA, CS, CWA exam preparation, Direct & Indirect Tax, GST, Income Tax, and Business News. We provide quality content, courses, and resources.",
-    mission:
-      "To empower professionals and students with the latest updates and knowledge in finance, taxation, and corporate laws.",
-    vision:
-      "To be the most trusted source for CA, CS, CWA and tax-related content in India.",
-  });
+  const [content, setContent] = useState(defaultContent);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCmsPageBySlug(SLUG)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const m = (data.meta || {}) as Record<string, unknown>;
+        setContent({
+          title: data.title ?? defaultContent.title,
+          heading: (m.heading as string) ?? defaultContent.heading,
+          description: data.content ?? defaultContent.description,
+          mission: (m.mission as string) ?? defaultContent.mission,
+          vision: (m.vision as string) ?? defaultContent.vision,
+        });
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Save", content);
+    setSaving(true);
+    updateCmsPage(SLUG, {
+      title: content.title,
+      content: content.description,
+      meta: { heading: content.heading, mission: content.mission, vision: content.vision },
+    })
+      .then(() => { setSaving(false); })
+      .catch(() => { setSaving(false); });
   };
 
   return (
@@ -93,8 +124,8 @@ export default function AboutContent() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} size="sm">
-            Save Changes
+          <Button onClick={handleSave} size="sm" disabled={loading || saving}>
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>

@@ -8,64 +8,85 @@ import Highlight from "@tiptap/extension-highlight";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
+import ImageResize from "tiptap-extension-resize-image";
 import type { Editor } from "@tiptap/core";
-import {
-  ArticleImageWithLinkNode,
-  ArticleCTANode,
-  ArticleAdSlotNode,
-  ArticleAlsoReadNode,
-  ArticleDownloadButtonNode,
-  ArticleMembershipCTANode,
-} from "./nodes";
-import {
-  ARTICLE_EDITOR_DOC_DEFAULT,
-  type ArticleBodyJSON,
-} from "./types";
+import { ArticleBodyJSON } from "./types";
 
 interface ArticleEditorProps {
   value?: string;
-  onChange?: (json: string) => void;
+  onChange?: (html: string) => void;
   placeholder?: string;
   minHeight?: string | number;
   editable?: boolean;
   className?: string;
 }
 
-function ArticleEditorToolbar({
-  editor,
-  onInsertImage,
-  onInsertCTA,
-  onInsertAdSlot,
-  onInsertAlsoRead,
-  onInsertDownloadButton,
-  onInsertMembershipCTA,
-}: {
-  editor: Editor | null;
-  onInsertImage: () => void;
-  onInsertCTA: () => void;
-  onInsertAdSlot: () => void;
-  onInsertAlsoRead: () => void;
-  onInsertDownloadButton: () => void;
-  onInsertMembershipCTA: () => void;
-}) {
-  const [showInsert, setShowInsert] = useState(false);
-  const insertRef = useRef<HTMLDivElement>(null);
+function Toolbar({ editor }: { editor: Editor | null }) {
+  const [linkUrl, setLinkUrl] = useState("");
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const linkInputRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!showInsert) return;
+    if (!showLinkInput) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (insertRef.current && !insertRef.current.contains(e.target as Node)) {
-        setShowInsert(false);
+      if (linkInputRef.current && !linkInputRef.current.contains(e.target as Node)) {
+        setShowLinkInput(false);
       }
     };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowLinkInput(false);
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showInsert]);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showLinkInput]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!editor) return null;
 
+  const setLink = () => {
+    if (linkUrl === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      setShowLinkInput(false);
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
+    setShowLinkInput(false);
+    setLinkUrl("");
+  };
+
+  const addImage = () => {
+    // Prompt the user for a choice: URL or Upload?
+    // A simple way is to just trigger the file picker, but if they cancel we could ask for URL,
+    // or we just rely on file upload for the button and keep URL for pasting.
+    // Let's open the file picker.
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        // @ts-ignore - tiptap-extension-resize-image doesn't extend ChainedCommands properly
+        editor.chain().focus().setImage({ src: result }).run();
+      }
+    };
+    reader.readAsDataURL(file);
+    // Reset the input so the same file can be uploaded again if needed
+    e.target.value = "";
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2 dark:border-gray-800 dark:bg-white/[0.03]">
+      {/* Undo / Redo */}
       <button
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
@@ -89,32 +110,32 @@ function ArticleEditorToolbar({
         </svg>
       </button>
       <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
+      {/* Headings */}
       {[1, 2, 3].map((level) => (
         <button
           key={level}
           type="button"
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 }).run()
-          }
-          className={`rounded px-2 py-1 text-sm font-medium transition ${
-            editor.isActive("heading", { level: level as 1 | 2 | 3 })
-              ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-              : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-          }`}
+          onClick={() => editor.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 }).run()}
+          className={`rounded px-2 py-1 text-sm font-medium transition ${editor.isActive("heading", { level: level as 1 | 2 | 3 })
+            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+            }`}
           title={`Heading ${level}`}
         >
           H{level}
         </button>
       ))}
       <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
+      {/* Lists */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`rounded p-1.5 transition ${
-          editor.isActive("bulletList")
-            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+        className={`rounded p-1.5 transition ${editor.isActive("bulletList")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Bullet list"
       >
         <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
@@ -124,11 +145,10 @@ function ArticleEditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`rounded p-1.5 transition ${
-          editor.isActive("orderedList")
-            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+        className={`rounded p-1.5 transition ${editor.isActive("orderedList")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Ordered list"
       >
         <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
@@ -136,14 +156,15 @@ function ArticleEditorToolbar({
         </svg>
       </button>
       <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
+      {/* Text formatting */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`rounded px-2 py-1 text-sm font-medium transition ${
-          editor.isActive("bold")
-            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+        className={`rounded px-2 py-1 text-sm font-medium transition ${editor.isActive("bold")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Bold"
       >
         B
@@ -151,11 +172,10 @@ function ArticleEditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`rounded px-2 py-1 text-sm font-medium italic transition ${
-          editor.isActive("italic")
-            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+        className={`rounded px-2 py-1 text-sm font-medium transition italic ${editor.isActive("italic")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Italic"
       >
         I
@@ -163,105 +183,184 @@ function ArticleEditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`rounded px-2 py-1 text-sm font-medium transition line-through ${
-          editor.isActive("strike")
-            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+        className={`rounded px-2 py-1 text-sm font-medium transition line-through ${editor.isActive("strike")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Strike"
       >
         S
       </button>
       <button
         type="button"
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`rounded p-1.5 transition ${
-          editor.isActive("blockquote")
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        className={`rounded px-2 py-1 font-mono text-sm transition ${editor.isActive("code")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
+        title="Code"
+      >
+        &lt;/&gt;
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`rounded px-2 py-1 text-sm font-medium underline transition ${editor.isActive("underline")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
+        title="Underline"
+      >
+        U
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHighlight().run()}
+        className={`rounded px-2 py-1 text-sm font-medium transition ${editor.isActive("highlight")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
+        title="Highlight"
+      >
+        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+
+      {/* Link */}
+      <div className="relative" ref={linkInputRef}>
+        <button
+          type="button"
+          onClick={() => {
+            const previousUrl = editor.getAttributes("link").href;
+            setLinkUrl(previousUrl || "");
+            setShowLinkInput((v) => !v);
+          }}
+          className={`rounded p-1.5 transition ${editor.isActive("link")
             ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
             : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        }`}
+            }`}
+          title="Link"
+        >
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        </button>
+        {showLinkInput && (
+          <div className="absolute left-0 top-full z-10 mt-1 flex gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <input
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://"
+              className="h-8 w-48 rounded border border-gray-200 px-2 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              onKeyDown={(e) => e.key === "Enter" && setLink()}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={setLink}
+              className="rounded bg-brand-500 px-2 py-1 text-sm text-white hover:bg-brand-600"
+            >
+              Apply
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Image */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/png, image/gif, image/jpeg, image/webp"
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={addImage}
+        className="rounded p-1.5 text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+        title="Upload Image"
+      >
+        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleSubscript().run()}
+        className={`rounded px-2 py-1 text-xs transition ${editor.isActive("subscript")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
+        title="Subscript"
+      >
+        x₂
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleSuperscript().run()}
+        className={`rounded px-2 py-1 text-xs transition ${editor.isActive("superscript")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
+        title="Superscript"
+      >
+        x²
+      </button>
+      <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
+      {/* Text alignment */}
+      {(["left", "center", "right", "justify"] as const).map((align) => (
+        <button
+          key={align}
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign(align).run()}
+          className={`rounded p-1.5 transition ${editor.isActive({ textAlign: align })
+            ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+            : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+            }`}
+          title={`Align ${align}`}
+        >
+          {align === "left" && (
+            <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 5h16v2H4V5zm0 4h12v2H4V9zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" />
+            </svg>
+          )}
+          {align === "center" && (
+            <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 5h16v2H4V5zm2 4h12v2H6V9zm-2 4h16v2H4v-2zm2 4h12v2H6v-2z" />
+            </svg>
+          )}
+          {align === "right" && (
+            <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 5h16v2H4V5zm4 4h12v2H8V9zm-4 4h16v2H4v-2zm4 4h12v2H8v-2z" />
+            </svg>
+          )}
+          {align === "justify" && (
+            <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 5h16v2H4V5zm0 4h16v2H4V9zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" />
+            </svg>
+          )}
+        </button>
+      ))}
+      <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
+      {/* Blockquote */}
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        className={`rounded p-1.5 transition ${editor.isActive("blockquote")
+          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+          : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+          }`}
         title="Blockquote"
       >
         <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
           <path d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z" />
         </svg>
       </button>
-      <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
-      <div className="relative" ref={insertRef}>
-        <button
-          type="button"
-          onClick={() => setShowInsert((v) => !v)}
-          className="rounded px-2 py-1 text-sm font-medium text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-          title="Insert block"
-        >
-          Insert
-        </button>
-        {showInsert && (
-          <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-            <button
-              type="button"
-              onClick={() => {
-                onInsertImage();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Image
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onInsertCTA();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              CTA
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onInsertAdSlot();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Ad slot
-            </button>
-            <hr className="my-1 border-gray-200 dark:border-gray-700" />
-            <button
-              type="button"
-              onClick={() => {
-                onInsertAlsoRead();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Also Read
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onInsertDownloadButton();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Download Button
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onInsertMembershipCTA();
-                setShowInsert(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Membership CTA
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -274,18 +373,7 @@ export default function ArticleEditor({
   editable = true,
   className = "",
 }: ArticleEditorProps) {
-  const initialContent = (() => {
-    if (!value?.trim()) return ARTICLE_EDITOR_DOC_DEFAULT;
-    try {
-      const parsed = JSON.parse(value) as ArticleBodyJSON;
-      if (parsed && typeof parsed === "object" && parsed.type === "doc") {
-        return parsed;
-      }
-    } catch {
-      // fallback: empty doc
-    }
-    return ARTICLE_EDITOR_DOC_DEFAULT;
-  })();
+  const [initialSyncDone, setInitialSyncDone] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -299,86 +387,75 @@ export default function ArticleEditor({
       Highlight.configure({ multicolor: false }),
       Subscript,
       Superscript,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      ArticleImageWithLinkNode,
-      ArticleCTANode,
-      ArticleAdSlotNode,
-      ArticleAlsoReadNode,
-      ArticleDownloadButtonNode,
-      ArticleMembershipCTANode,
+      TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
+      ImageResize,
     ],
-    content: initialContent,
+    content: "", // Will be set in useEffect to handle JSON/HTML conversion properly
     editable,
     immediatelyRender: false,
     onUpdate: ({ editor: e }) => {
-      onChange?.(JSON.stringify(e.getJSON()));
+      // Always output HTML for backend compatibility instead of TipTap JSON
+      onChange?.(e.getHTML());
     },
     editorProps: {
       attributes: {
-        class: "px-4 py-3 min-h-[200px] focus:outline-none",
+        class: "px-4 py-3 min-h-[200px] focus:outline-none prose max-w-none dark:prose-invert",
       },
     },
   });
 
+  // Sync value when it changes externally
   useEffect(() => {
     if (!editor || value === undefined) return;
     const trimmed = typeof value === "string" ? value.trim() : "";
-    if (!trimmed) return;
-    try {
-      const parsed = JSON.parse(trimmed) as ArticleBodyJSON;
-      if (parsed && typeof parsed === "object" && parsed.type === "doc") {
-        const current = editor.getJSON();
-        if (JSON.stringify(current) !== trimmed) {
-          editor.commands.setContent(parsed, { emitUpdate: false });
-        }
+
+    // First time loading content into the editor
+    if (!initialSyncDone) {
+      if (!trimmed) {
+        setInitialSyncDone(true);
         return;
       }
-    } catch {
-      // not JSON
-    }
-    // Legacy: value is HTML (e.g. from WordPress migration). TipTap setContent accepts HTML.
-    try {
-      editor.commands.setContent(trimmed, { emitUpdate: false });
-    } catch {
-      // schema may reject some HTML; show as plain text in a paragraph
-      editor.commands.setContent({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: trimmed.slice(0, 5000) }] }] }, { emitUpdate: false });
-    }
-  }, [value, editor]);
 
-  const handleInsertImage = () => {
-    editor?.chain().focus().setArticleImageWithLink({}).run();
-  };
-  const handleInsertCTA = () => {
-    editor?.chain().focus().setArticleCTA({}).run();
-  };
-  const handleInsertAdSlot = () => {
-    editor?.chain().focus().setArticleAdSlot({}).run();
-  };
-  const handleInsertAlsoRead = () => {
-    editor?.chain().focus().setArticleAlsoRead({}).run();
-  };
-  const handleInsertDownloadButton = () => {
-    editor?.chain().focus().setArticleDownloadButton({}).run();
-  };
-  const handleInsertMembershipCTA = () => {
-    editor?.chain().focus().setArticleMembershipCTA({}).run();
-  };
+      try {
+        if (trimmed.startsWith("{")) {
+          const parsed = JSON.parse(trimmed) as ArticleBodyJSON;
+          if (parsed && typeof parsed === "object" && parsed.type === "doc") {
+            // It's a legacy JSON doc, load it
+            editor.commands.setContent(parsed, { emitUpdate: false });
+            // Let the parent know we've converted to HTML so they can save it
+            setTimeout(() => {
+              onChange?.(editor.getHTML());
+            }, 0);
+            setInitialSyncDone(true);
+            return;
+          }
+        }
+      } catch {
+        // Not JSON
+      }
+
+      // Load as HTML
+      editor.commands.setContent(trimmed, { emitUpdate: false });
+      setInitialSyncDone(true);
+      return;
+    }
+
+    // Subsequent updates (e.g., from form resets)
+    if (initialSyncDone) {
+      // Don't update if it's deeply equal to avoid infinite loops,
+      // but if the parent pushes an entirely new HTML string, we should respect it
+      const currentHtml = editor.getHTML();
+      if (trimmed !== currentHtml && trimmed !== "<p></p>" && !trimmed.startsWith("{")) {
+        editor.commands.setContent(trimmed, { emitUpdate: false });
+      }
+    }
+  }, [value, editor, initialSyncDone, onChange]);
 
   return (
     <div
       className={`overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 ${className}`}
     >
-      {editable && (
-        <ArticleEditorToolbar
-          editor={editor}
-          onInsertImage={handleInsertImage}
-          onInsertCTA={handleInsertCTA}
-          onInsertAdSlot={handleInsertAdSlot}
-          onInsertAlsoRead={handleInsertAlsoRead}
-          onInsertDownloadButton={handleInsertDownloadButton}
-          onInsertMembershipCTA={handleInsertMembershipCTA}
-        />
-      )}
+      {editable && <Toolbar editor={editor} />}
       <div
         className="rich-text-editor-content"
         style={{

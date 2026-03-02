@@ -70,7 +70,7 @@ function DataTableInner<T extends object>({
           search={search}
           onSearchChange={setSearch}
           placeholder={searchPlaceholder}
-          disabled={loading}
+          disabled={false}
         />
       )}
       <div className="max-w-full overflow-x-auto">

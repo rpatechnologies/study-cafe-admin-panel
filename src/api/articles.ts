@@ -22,6 +22,7 @@ export interface ArticleRecord {
   content?: string | null;
   thumbnail_url: string | null;
   author_id: number | null;
+  author_name: string | null;
   sub_heading?: string | null;
   status: string;
   published_at: string | null;
@@ -32,6 +33,8 @@ export interface ArticleRecord {
   updated_at?: string;
   category_ids?: number[];
   tag_ids?: number[];
+  /** Tags with id + name (use for display; tag_ids for form submit) */
+  tags?: { id: number; name: string }[];
   article_type_ids?: number[];
   court_ids?: number[];
   /** Resolved from [related id="..."] in content (legacy shortcodes) */
@@ -71,7 +74,7 @@ export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL);
 export async function fetchArticlesPaginated(
   params: DataTableFetchParams
 ): Promise<DataTableFetchResult<ArticleRecord>> {
-  const { data } = await api.get<ArticlesPaginatedResponse>(BASE_URL, {
+  const { data } = await api.get<any>(BASE_URL, {
     params: {
       page: params.page,
       limit: params.limit,
@@ -80,12 +83,19 @@ export async function fetchArticlesPaginated(
       sortOrder: params.sortOrder,
     },
   });
-  const resolved = (data as ArticlesPaginatedResponse)?.data !== undefined
-    ? (data as ArticlesPaginatedResponse)
-    : { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0, hasNextPage: false, hasPreviousPage: false } };
+
+  const list = Array.isArray(data) ? data : (data?.data ?? []);
+
   return {
-    data: resolved.data ?? [],
-    meta: resolved.meta,
+    data: list,
+    meta: {
+      total: data?.total ?? list.length,
+      page: data?.page ?? 1,
+      limit: data?.limit ?? 10,
+      totalPages: data?.totalPages ?? 1,
+      hasNextPage: data?.hasNextPage ?? false,
+      hasPreviousPage: data?.hasPreviousPage ?? false,
+    },
   };
 }
 

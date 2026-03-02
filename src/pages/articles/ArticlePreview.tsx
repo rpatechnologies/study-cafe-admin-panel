@@ -1,10 +1,19 @@
 import { Link, useLocation, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import ArticleContentRenderer from "../../components/article-editor/ArticleContentRenderer";
-import type { ArticleFormData } from "./ArticleForm";
+import type { ArticleFormData, ArticleTaxonomyOptions } from "./ArticleForm";
 
 const PREVIEW_STATE_KEY = "previewArticle";
 const RESTORE_STATE_KEY = "restoreFormData";
+
+function resolveNames(
+  ids: number[] | undefined,
+  options: { id: number; name: string; slug: string | null }[]
+): string[] {
+  if (!ids?.length || !options?.length) return [];
+  const byId = new Map(options.map((o) => [o.id, o.name]));
+  return ids.map((id) => byId.get(id) ?? String(id)).filter(Boolean);
+}
 
 export default function ArticlePreview() {
   const location = useLocation();
@@ -12,14 +21,15 @@ export default function ArticlePreview() {
   const previewData = location.state?.[PREVIEW_STATE_KEY] as
     | ArticleFormData
     | undefined;
+  const taxonomyOptions = location.state?.taxonomyOptions as ArticleTaxonomyOptions | undefined;
   const returnPath = (location.state?.returnPath as string) || "/articles/create";
 
   const handleBack = () => {
     if (previewData) {
       // Navigate back with form data to restore it
-      navigate(returnPath, { 
+      navigate(returnPath, {
         state: { [RESTORE_STATE_KEY]: previewData },
-        replace: true 
+        replace: true
       });
     } else {
       navigate("/articles");
@@ -47,13 +57,19 @@ export default function ArticlePreview() {
     );
   }
 
-  const { meta, featuredImage, body, author, tags } = previewData;
+  const { meta, featuredImage, body, author, tags, category_ids, tag_ids, article_type_ids, court_ids } = previewData;
   const hasBody = Boolean(body?.trim());
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+  const opts = taxonomyOptions ?? { categories: [], tags: [], articleTypes: [], courts: [] };
+  const categoryNames = resolveNames(category_ids, opts.categories);
+  const tagNames = resolveNames(tag_ids, opts.tags);
+  const articleTypeNames = resolveNames(article_type_ids, opts.articleTypes);
+  const courtNames = resolveNames(court_ids, opts.courts);
+  const hasTaxonomies = categoryNames.length > 0 || tagNames.length > 0 || articleTypeNames.length > 0 || courtNames.length > 0 || (tags?.length ?? 0) > 0;
 
   return (
     <>
@@ -83,7 +99,7 @@ export default function ArticlePreview() {
               </button>
               <Link
                 to="/articles"
-                className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition hover:bg-gray-600"
+                className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-600"
               >
                 All Articles
               </Link>
@@ -121,6 +137,8 @@ export default function ArticlePreview() {
                     src={author.imageUrl}
                     alt={author.name}
                     className="h-8 w-8 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
                   />
                 )}
                 {author.name && (
@@ -137,6 +155,8 @@ export default function ArticlePreview() {
                     src={featuredImage.imageUrl}
                     alt={featuredImage.alt ?? meta.title}
                     className="w-full rounded-xl object-cover"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
                   />
                   {featuredImage.caption && (
                     <figcaption className="mt-2 text-center text-sm text-gray-500">
@@ -150,27 +170,69 @@ export default function ArticlePreview() {
               {hasBody ? (
                 <ArticleContentRenderer content={body} />
               ) : (
-                <div className="rounded-xl border-2 border-dashed border-gray-700 bg-gray-800/50 py-16 text-center">
+                <div className="rounded-xl border-2 border-dashed border-gray-700  py-16 text-center">
                   <p className="text-gray-500">
                     No content yet. Add content in the editor and preview again.
                   </p>
                 </div>
               )}
 
-              {/* Tags */}
-              {tags.length > 0 && (
-                <div className="mt-8 border-t border-gray-800 pt-6">
-                  <p className="mb-3 text-sm font-medium text-gray-500">Tags:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-gray-800 px-3 py-1 text-sm  cursor-pointer"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+              {/* Categories, Tags, Article types, Courts (from IDs) */}
+              {hasTaxonomies && (
+                <div className="mt-8 space-y-4 border-t border-gray-800 pt-6 flex flex-wrap gap-2">
+                  {categoryNames.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-500">Categories</p>
+                      <div className="flex flex-wrap gap-2">
+                        {categoryNames.map((name, i) => (
+                          <span key={`cat-${i}-${name}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(tagNames.length > 0 || (tags?.length ?? 0) > 0) && (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-500">Tags</p>
+                      <div className="flex flex-wrap gap-2">
+                        {tagNames.map((name, i) => (
+                          <span key={`tag-${i}-${name}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
+                            {name}
+                          </span>
+                        ))}
+                        {(tags?.length ?? 0) > 0 && tags!.map((tag, i) => (
+                          <span key={`t-${i}-${tag}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {articleTypeNames.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-500">Article types</p>
+                      <div className="flex flex-wrap gap-2">
+                        {articleTypeNames.map((name, i) => (
+                          <span key={`type-${i}-${name}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {courtNames.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-500">Courts</p>
+                      <div className="flex flex-wrap gap-2">
+                        {courtNames.map((name, i) => (
+                          <span key={`court-${i}-${name}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -187,7 +249,7 @@ export default function ArticlePreview() {
                       <div className="h-16 w-20 shrink-0 rounded-lg bg-gray-300" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 line-clamp-2">
-                          Sample Article Title #{i}
+                          Trending Article Title #{i}
                         </p>
                         <p className="mt-1 text-xs text-gray-500">Jan {i}, 2026</p>
                       </div>

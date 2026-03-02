@@ -1,21 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import RichTextEditor from "../../components/form/RichTextEditor";
 import Button from "../../components/ui/button/Button";
+import { fetchCmsPageBySlug, updateCmsPage } from "../../api/cmsPages";
+
+const SLUG = "disclaimer";
+
+const defaultContent = {
+  title: "Disclaimer",
+  heading: "Disclaimer",
+  body: "The information provided on StudyCafe is for general informational purposes only. Please read our full disclaimer.",
+};
 
 export default function DisclaimerContent() {
-  const [content, setContent] = useState({
-    title: "Disclaimer",
-    heading: "Disclaimer",
-    body: "The information provided on StudyCafe is for general informational purposes only. Please read our full disclaimer.",
-  });
+  const [content, setContent] = useState(defaultContent);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCmsPageBySlug(SLUG)
+      .then((data) => {
+        if (cancelled || !data) return;
+        setContent({
+          title: data.title ?? defaultContent.title,
+          heading: (data.meta as Record<string, unknown>)?.heading as string ?? defaultContent.heading,
+          body: data.content ?? defaultContent.body,
+        });
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Save", content);
+    setSaving(true);
+    updateCmsPage(SLUG, {
+      title: content.title,
+      content: content.body,
+      meta: { heading: content.heading },
+    })
+      .then(() => { setSaving(false); })
+      .catch(() => { setSaving(false); });
   };
 
   return (
@@ -65,8 +93,8 @@ export default function DisclaimerContent() {
           </div>
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleSave} size="sm">
-            Save Changes
+          <Button onClick={handleSave} size="sm" disabled={loading || saving}>
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>

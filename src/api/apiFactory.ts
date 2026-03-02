@@ -36,12 +36,16 @@ export function createCrudApi<T extends { id: string | number }>(
     return {
         async list(params: ListQuery = {}): Promise<PaginatedResponse<T>> {
             const { data } = await api.get<PaginatedResponse<T> | T[]>(basePath, { params });
-            // Backend may return { data: T[], total, page, limit, pages } (paginated) or a bare array
-            const list = Array.isArray(data) ? data : (data?.data ?? []);
-            const total = typeof (data as PaginatedResponse<T>)?.total === 'number' ? (data as PaginatedResponse<T>).total : list.length;
-            const page = typeof (data as PaginatedResponse<T>)?.page === 'number' ? (data as PaginatedResponse<T>).page : 1;
-            const limit = typeof (data as PaginatedResponse<T>)?.limit === 'number' ? (data as PaginatedResponse<T>).limit : (total || 10);
-            const pages = typeof (data as PaginatedResponse<T>)?.pages === 'number' ? (data as PaginatedResponse<T>).pages : (total ? Math.ceil(total / limit) || 1 : 0);
+
+            // Following the axios interceptor change, paginated responses are flattened to: { data: T[], total, page, ... }
+            // So 'data' here is likely that flattened object, not just the array.
+            const list = Array.isArray(data) ? data : (Array.isArray((data as any)?.data) ? (data as any).data : []);
+
+            const total = typeof (data as any)?.total === 'number' ? (data as any).total : list.length;
+            const page = typeof (data as any)?.page === 'number' ? (data as any).page : 1;
+            const limit = typeof (data as any)?.limit === 'number' ? (data as any).limit : (total || 10);
+            const pages = typeof (data as any)?.pages === 'number' ? (data as any).pages : (total ? Math.ceil(total / limit) || 1 : 0);
+
             return { data: list, total, page, limit, pages };
         },
 

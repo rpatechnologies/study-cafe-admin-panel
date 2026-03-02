@@ -6,14 +6,19 @@ import Badge from "../../components/ui/badge/Badge";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { PERM_MEMBERSHIPS_EDIT, PERM_MEMBERSHIPS_DELETE } from "../../constants/permissions";
+import {
+  PERM_MEMBERSHIPS_EDIT,
+  PERM_MEMBERSHIPS_DELETE,
+} from "../../constants/permissions";
 import { plansApi, type Plan } from "../../api/plans";
 import { usersApi, type User } from "../../api/users";
 
 const formatDuration = (days: number) => {
-  if (days >= 365) return `${(days / 365).toFixed(1).replace(/\.0$/, '')} year${days >= 730 ? 's' : ''}`;
-  if (days >= 30) return `${(days / 30).toFixed(1).replace(/\.0$/, '')} month${days >= 60 ? 's' : ''}`;
-  return `${days} day${days !== 1 ? 's' : ''}`;
+  if (days >= 365)
+    return `${(days / 365).toFixed(1).replace(/\.0$/, "")} year${days >= 730 ? "s" : ""}`;
+  if (days >= 30)
+    return `${(days / 30).toFixed(1).replace(/\.0$/, "")} month${days >= 60 ? "s" : ""}`;
+  return `${days} day${days !== 1 ? "s" : ""}`;
 };
 
 export default function MembershipView() {
@@ -27,26 +32,36 @@ export default function MembershipView() {
   const [addSearch, setAddSearch] = useState("");
   const [addCandidates, setAddCandidates] = useState<User[]>([]);
   const [addCandidatesLoading, setAddCandidatesLoading] = useState(false);
-  const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const {
+    isOpen: isDeleteModalOpen,
+    openModal: openDeleteModal,
+    closeModal: closeDeleteModal,
+  } = useModal();
 
-  const loadPlan = useCallback(async (planId: string) => {
-    try {
-      setLoading(true);
-      const data = await plansApi.get(planId);
-      setMembership(data);
-    } catch (err) {
-      console.error("Failed to load membership", err);
-      navigate("/memberships");
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
+  const loadPlan = useCallback(
+    async (planId: string) => {
+      try {
+        setLoading(true);
+        const data = await plansApi.get(planId);
+        setMembership(data);
+      } catch (err) {
+        console.error("Failed to load membership", err);
+        navigate("/memberships");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate],
+  );
 
   const loadStudents = useCallback(async () => {
     if (!membership?.slug) return;
     try {
       setStudentsLoading(true);
-      const res = await usersApi.list({ membership: membership.slug, limit: 500 });
+      const res = await usersApi.list({
+        membership: membership.slug,
+        limit: 500,
+      });
       setStudents(res.data || []);
     } catch (err) {
       console.error("Failed to load students", err);
@@ -79,7 +94,9 @@ export default function MembershipView() {
   const handleRemoveFromPlan = async (user: User) => {
     if (!user.id) return;
     try {
-      await usersApi.update(String(user.id), { membership: null } as { membership?: string | null });
+      await usersApi.update(String(user.id), { membership: null } as {
+        membership?: string | null;
+      });
       await loadStudents();
     } catch (err) {
       console.error("Failed to remove from plan", err);
@@ -108,7 +125,10 @@ export default function MembershipView() {
   const searchAddCandidates = async () => {
     try {
       setAddCandidatesLoading(true);
-      const res = await usersApi.list({ search: addSearch || undefined, limit: 50 });
+      const res = await usersApi.list({
+        search: addSearch || undefined,
+        limit: 50,
+      });
       const inPlan = new Set(students.map((s) => String(s.id)));
       const list = (res.data || []).filter((u) => !inPlan.has(String(u.id)));
       setAddCandidates(list);
@@ -121,7 +141,8 @@ export default function MembershipView() {
   };
 
   if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!membership) return <div className="p-6 text-center">Membership not found</div>;
+  if (!membership)
+    return <div className="p-6 text-center">Membership not found</div>;
 
   return (
     <>
@@ -133,7 +154,10 @@ export default function MembershipView() {
         pageTitle={membership.name}
         actions={
           <div className="flex items-center gap-2">
-            <RequirePermission permissions={[PERM_MEMBERSHIPS_EDIT]} fallback={null}>
+            <RequirePermission
+              permissions={[PERM_MEMBERSHIPS_EDIT]}
+              fallback={null}
+            >
               <Link
                 to={`/memberships/${id}/edit`}
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
@@ -141,7 +165,10 @@ export default function MembershipView() {
                 Edit
               </Link>
             </RequirePermission>
-            <RequirePermission permissions={[PERM_MEMBERSHIPS_DELETE]} fallback={null}>
+            <RequirePermission
+              permissions={[PERM_MEMBERSHIPS_DELETE]}
+              fallback={null}
+            >
               <button
                 type="button"
                 onClick={openDeleteModal}
@@ -172,21 +199,30 @@ export default function MembershipView() {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Name
               </p>
-              <p className="text-gray-800 dark:text-white/90">{membership.name}</p>
+              <p className="text-gray-800 dark:text-white/90">
+                {membership.name}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Slug
               </p>
-              <p className="text-gray-800 dark:text-white/90 font-mono text-sm">{membership.slug}</p>
+              <p className="text-gray-800 dark:text-white/90 font-mono text-sm">
+                {membership.slug}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Description
               </p>
-              <p className="text-gray-800 dark:text-white/90">
-                {membership.description || "-"}
-              </p>
+              {membership.description ? (
+                <div
+                  className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-white/90"
+                  dangerouslySetInnerHTML={{ __html: membership.description }}
+                />
+              ) : (
+                <p className="text-gray-800 dark:text-white/90">-</p>
+              )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -202,7 +238,9 @@ export default function MembershipView() {
                   Duration
                 </p>
                 <p className="text-gray-800 dark:text-white/90">
-                  {membership.is_lifetime ? "Lifetime" : formatDuration(membership.duration_days)}
+                  {membership.is_lifetime
+                    ? "Lifetime"
+                    : formatDuration(membership.duration_days)}
                 </p>
               </div>
             </div>
@@ -210,10 +248,15 @@ export default function MembershipView() {
               <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                 Features
               </p>
-              {Array.isArray(membership.features) && membership.features.length > 0 ? (
-                <ul className="list-disc space-y-1 pl-5 text-gray-800 dark:text-white/90">
+              {Array.isArray(membership.features) &&
+              membership.features.length > 0 ? (
+                <ul className="list-disc space-y-1  text-gray-800 dark:text-white/90">
                   {membership.features.map((feature, i) => (
-                    <li key={i}>{feature}</li>
+                    <div
+                      key={i}
+                      className=""
+                      dangerouslySetInnerHTML={{ __html: feature }}
+                    />
                   ))}
                 </ul>
               ) : (
@@ -228,7 +271,10 @@ export default function MembershipView() {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
               Students in this plan
             </h3>
-            <RequirePermission permissions={[PERM_MEMBERSHIPS_EDIT]} fallback={null}>
+            <RequirePermission
+              permissions={[PERM_MEMBERSHIPS_EDIT]}
+              fallback={null}
+            >
               <button
                 type="button"
                 onClick={openAddModal}
@@ -247,18 +293,34 @@ export default function MembershipView() {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Name</th>
-                    <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">Email</th>
-                    <th className="py-2 w-24 font-medium text-gray-600 dark:text-gray-400">Actions</th>
+                    <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">
+                      Name
+                    </th>
+                    <th className="py-2 pr-4 font-medium text-gray-600 dark:text-gray-400">
+                      Email
+                    </th>
+                    <th className="py-2 w-24 font-medium text-gray-600 dark:text-gray-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.map((u) => (
-                    <tr key={String(u.id)} className="border-b border-gray-100 dark:border-gray-800">
-                      <td className="py-2 pr-4 text-gray-800 dark:text-white/90">{u.name || u.display_name || "-"}</td>
-                      <td className="py-2 pr-4 text-gray-800 dark:text-white/90">{u.email}</td>
+                    <tr
+                      key={String(u.id)}
+                      className="border-b border-gray-100 dark:border-gray-800"
+                    >
+                      <td className="py-2 pr-4 text-gray-800 dark:text-white/90">
+                        {u.name || u.display_name || "-"}
+                      </td>
+                      <td className="py-2 pr-4 text-gray-800 dark:text-white/90">
+                        {u.email}
+                      </td>
                       <td className="py-2">
-                        <RequirePermission permissions={[PERM_MEMBERSHIPS_EDIT]} fallback={null}>
+                        <RequirePermission
+                          permissions={[PERM_MEMBERSHIPS_EDIT]}
+                          fallback={null}
+                        >
                           <button
                             type="button"
                             onClick={() => handleRemoveFromPlan(u)}
@@ -278,10 +340,18 @@ export default function MembershipView() {
       </div>
 
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setAddModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setAddModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Add member to plan</h4>
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                Add member to plan
+              </h4>
               <div className="mt-3 flex gap-2">
                 <input
                   type="text"
@@ -290,23 +360,40 @@ export default function MembershipView() {
                   placeholder="Search by name or email..."
                   className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-800 dark:text-white/90"
                 />
-                <button type="button" onClick={searchAddCandidates} disabled={addCandidatesLoading} className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50">
+                <button
+                  type="button"
+                  onClick={searchAddCandidates}
+                  disabled={addCandidatesLoading}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50"
+                >
                   {addCandidatesLoading ? "Searching..." : "Search"}
                 </button>
               </div>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
               {addCandidates.length === 0 && !addCandidatesLoading && (
-                <p className="text-gray-500 text-sm">Search for users to add. Those already in this plan are excluded.</p>
+                <p className="text-gray-500 text-sm">
+                  Search for users to add. Those already in this plan are
+                  excluded.
+                </p>
               )}
               <ul className="space-y-2">
                 {addCandidates.map((u) => (
-                  <li key={String(u.id)} className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                  <li
+                    key={String(u.id)}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                  >
                     <div>
-                      <p className="font-medium text-gray-800 dark:text-white/90">{u.name || u.display_name || u.email}</p>
+                      <p className="font-medium text-gray-800 dark:text-white/90">
+                        {u.name || u.display_name || u.email}
+                      </p>
                       <p className="text-sm text-gray-500">{u.email}</p>
                     </div>
-                    <button type="button" onClick={() => handleAddToPlan(u)} className="rounded-lg px-3 py-1.5 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600">
+                    <button
+                      type="button"
+                      onClick={() => handleAddToPlan(u)}
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600"
+                    >
                       Add to plan
                     </button>
                   </li>
@@ -314,7 +401,11 @@ export default function MembershipView() {
               </ul>
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <button type="button" onClick={() => setAddModalOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => setAddModalOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
                 Close
               </button>
             </div>
