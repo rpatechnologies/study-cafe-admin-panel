@@ -1,47 +1,90 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import BackLink from "../../components/common/BackLink";
 import SEOMetadataForm, { type SEOMetadataFormData } from "./SEOMetadataForm";
-import type { SEOMetadata } from "./SEOMetadataList";
-
-const mockEntry: SEOMetadata & { metaKeywords?: string; canonicalUrl?: string; ogTitle?: string; ogDescription?: string; ogImageUrl?: string } = {
-  id: 1,
-  pageName: "Home",
-  pageSlug: "/",
-  metaTitle: "StudyCafe – CA, CS, CWA | GST, Income Tax & Professional Courses",
-  metaDescription:
-    "Studycafe.in – Your trusted platform for CA, CS, CWA exam preparation, GST, Income Tax, and Business News.",
-  robots: "index, follow",
-  metaKeywords: "CA, CS, CWA, GST, Income Tax, studycafe",
-  canonicalUrl: "https://studycafe.in",
-  ogTitle: "StudyCafe – CA, CS, CWA | GST, Income Tax",
-  ogDescription: "Your trusted platform for CA, CS, CWA exam preparation.",
-  ogImageUrl: "",
-};
+import { fetchSeoMetadataById, updateSeoMetadata } from "../../api/seo";
 
 export default function SEOMetadataEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [defaultValues, setDefaultValues] = useState<SEOMetadataFormData | null>(null);
 
-  const defaultValues: SEOMetadataFormData = {
-    pageName: mockEntry.pageName,
-    pageSlug: mockEntry.pageSlug,
-    metaTitle: mockEntry.metaTitle,
-    metaDescription: mockEntry.metaDescription,
-    metaKeywords: mockEntry.metaKeywords ?? "",
-    canonicalUrl: mockEntry.canonicalUrl ?? "",
-    ogTitle: mockEntry.ogTitle ?? "",
-    ogDescription: mockEntry.ogDescription ?? "",
-    ogImageUrl: mockEntry.ogImageUrl ?? "",
-    robots: "index, follow",
+  useEffect(() => {
+    if (id) {
+      loadSeoMetadata(parseInt(id, 10));
+    }
+  }, [id]);
+
+  const loadSeoMetadata = async (metadataId: number) => {
+    try {
+      setLoading(true);
+      const data = await fetchSeoMetadataById(metadataId);
+      setDefaultValues({
+        pageName: data.pageName,
+        pageSlug: data.pageSlug,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
+        metaKeywords: data.metaKeywords,
+        canonicalUrl: data.canonicalUrl,
+        ogTitle: data.ogTitle,
+        ogDescription: data.ogDescription,
+        ogImageUrl: data.ogImageUrl,
+        robots: (data.robots as any) || "index, follow",
+      });
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to load SEO metadata", err);
+      setError("Failed to load SEO metadata");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (formData: SEOMetadataFormData) => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Update SEO metadata", id, formData);
-    navigate("/seo-metadata");
+  const handleSubmit = async (formData: SEOMetadataFormData) => {
+    if (!id) return;
+    try {
+      setSaving(true);
+      await updateSeoMetadata(parseInt(id, 10), {
+        pageName: formData.pageName,
+        pageSlug: formData.pageSlug,
+        metaTitle: formData.metaTitle,
+        metaDescription: formData.metaDescription,
+        metaKeywords: formData.metaKeywords,
+        canonicalUrl: formData.canonicalUrl,
+        ogTitle: formData.ogTitle,
+        ogDescription: formData.ogDescription,
+        ogImageUrl: formData.ogImageUrl,
+        robots: formData.robots,
+      });
+      navigate("/seo-metadata");
+    } catch (err: any) {
+      console.error("Failed to update SEO metadata", err);
+      alert(err.response?.data?.message || "Failed to update SEO metadata");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-full min-h-[400px] items-center justify-center">
+        <p className="text-gray-500">Loading SEO metadata...</p>
+      </div>
+    );
+  }
+
+  if (error || !defaultValues) {
+    return (
+      <div className="flex h-full min-h-[400px] items-center justify-center">
+        <p className="text-red-500">{error || "SEO Metadata not found"}</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -52,13 +95,12 @@ export default function SEOMetadataEdit() {
       <PageBreadcrumb
         pageTitle="Edit SEO Metadata"
         compact
-        actions={
-          <BackLink to="/seo-metadata">Back to SEO Metadata</BackLink>
-        }
+        actions={<BackLink to="/seo-metadata">Back to SEO Metadata</BackLink>}
       />
       <SEOMetadataForm
         mode="edit"
         defaultValues={defaultValues}
+        loading={saving}
         onSubmit={handleSubmit}
       />
     </>

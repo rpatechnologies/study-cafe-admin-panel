@@ -1,15 +1,29 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import TestimonialForm, { type TestimonialFormData } from "./TestimonialForm";
+import { createTestimonial } from "../../api/testimonials";
 
 export default function TestimonialCreate() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (formData: TestimonialFormData) => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Create testimonial", formData);
-    navigate("/testimonials");
+  const handleSubmit = async (formData: TestimonialFormData) => {
+    try {
+      setLoading(true);
+      await createTestimonial({
+        ...formData,
+        rating: formData.rating ? Number(formData.rating) : undefined,
+        sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
+      });
+      navigate("/testimonials");
+    } catch (err: any) {
+      console.error("Failed to create testimonial", err);
+      alert(err.response?.data?.message || "Failed to create testimonial");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,7 +36,7 @@ export default function TestimonialCreate() {
         pageTitle="Create Testimonial"
         compact
       />
-      <TestimonialForm mode="create" onSubmit={handleSubmit} />
+      <TestimonialForm mode="create" onSubmit={handleSubmit} loading={loading} />
     </>
   );
 }

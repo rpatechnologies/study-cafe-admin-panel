@@ -218,7 +218,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <ArrayEditor
               value={form.curriculum}
               onChange={(v) => updateField('curriculum', v)}
-              defaultItem={{ title: "", minutes: "", description: "" }}
+              defaultItem={{ title: "", minutes: "", description: "", video: "", files: [] }}
               addButtonLabel="Add Curriculum Section"
               renderItem={(item: any, index, update) => (
                 <div className="space-y-4">
@@ -230,6 +230,20 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                     <div>
                       <Label>Minutes</Label>
                       <Input value={item.minutes || ''} onChange={e => update(index, { minutes: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Video ID (Vimeo)</Label>
+                      <Input value={item.video || ''} onChange={e => update(index, { video: e.target.value })} placeholder="e.g. 538969956" />
+                    </div>
+                    <div>
+                      <Label>File IDs (comma-separated)</Label>
+                      <Input value={Array.isArray(item.files) ? item.files.join(', ') : (item.files || '')} onChange={e => {
+                        const val = e.target.value;
+                        const filesArr = val ? val.split(',').map((f: string) => f.trim()).filter(Boolean) : [];
+                        update(index, { files: filesArr });
+                      }} placeholder="e.g. 96620, 96621" />
                     </div>
                   </div>
                   <div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
 import { useMemo } from "react";
-import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, PageIcon, UserIcon } from "../icons";
+import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, PageIcon, UserIcon, VideoIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -49,6 +49,12 @@ const navItems: NavItem[] = [
       { name: "Page Settings", path: "/courses/settings", requiredPermission: ["admin:access"] },
     ],
     requiredPermission: ["admin:access"],
+  },
+  {
+    icon: <VideoIcon />,
+    name: "Live Sessions",
+    path: "/live-sessions",
+    // requiredPermission: ["admin:access"],
   },
   {
     icon: <DollarLineIcon />,

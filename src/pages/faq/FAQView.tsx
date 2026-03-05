@@ -1,31 +1,67 @@
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { useModal } from "../../hooks/useModal";
-import type { FAQ } from "./FAQList";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_FAQ_EDIT, PERM_FAQ_DELETE } from "../../constants/permissions";
-
-const mockFAQ: FAQ = {
-  id: 1,
-  question: "How do I access StudyCafe courses?",
-  answer:
-    "After purchasing a course, you can access it from your dashboard. Log in with your credentials and navigate to the Courses section.",
-};
+import { fetchFaq, deleteFaq, Faq } from "../../api/faqs";
 
 export default function FAQView() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const faq = mockFAQ; // TODO: Fetch by id when API is ready
+  const [loading, setLoading] = useState(true);
+  const [faq, setFaq] = useState<Faq | null>(null);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
 
-  const handleDeleteConfirm = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Delete FAQ", id);
-    closeDeleteModal();
-    navigate("/faq");
+  useEffect(() => {
+    if (id) {
+      loadFaq(Number(id));
+    }
+  }, [id]);
+
+  const loadFaq = async (faqId: number) => {
+    try {
+      setLoading(true);
+      const data = await fetchFaq(faqId);
+      setFaq(data);
+    } catch (err) {
+      console.error("Failed to load FAQ details", err);
+      alert("Failed to load FAQ details. It may not exist.");
+      navigate("/faq");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleDeleteConfirm = async () => {
+    if (!id) return;
+    try {
+      await deleteFaq(Number(id));
+      closeDeleteModal();
+      navigate("/faq");
+    } catch (err: any) {
+      console.error("Failed to delete FAQ", err);
+      alert(err.response?.data?.message || "Failed to delete FAQ");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <p className="text-gray-500">Loading FAQ data...</p>
+      </div>
+    );
+  }
+
+  if (!faq) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <p className="text-red-500">FAQ not found.</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -70,6 +106,16 @@ export default function FAQView() {
                 {faq.question}
               </p>
             </div>
+            {faq.sort_order !== undefined && (
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Sort Order
+                </p>
+                <p className="mt-1 text-gray-800 dark:text-white/90">
+                  {faq.sort_order}
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Answer

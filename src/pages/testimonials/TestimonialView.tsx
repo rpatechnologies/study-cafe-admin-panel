@@ -1,45 +1,77 @@
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { useModal } from "../../hooks/useModal";
-import type { Testimonial } from "./TestimonialList";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_TESTIMONIALS_EDIT, PERM_TESTIMONIALS_DELETE } from "../../constants/permissions";
-
-const mockTestimonial: Testimonial = {
-  id: 1,
-  quote:
-    "Studycafe has been instrumental in my CA preparation. The quality of content and courses is exceptional.",
-  authorName: "Priya Sharma",
-  authorRole: "CA Final Student",
-};
+import { fetchTestimonial, deleteTestimonial, Testimonial } from "../../api/testimonials";
 
 export default function TestimonialView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const testimonial = mockTestimonial; // TODO: Fetch by id when API is ready
+  const [testimonial, setTestimonial] = useState<Testimonial | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const {
     isOpen: isDeleteModalOpen,
     openModal: openDeleteModal,
     closeModal: closeDeleteModal,
   } = useModal();
 
-  const handleDeleteConfirm = () => {
-    // TODO: Integrate with API when backend is ready
-    console.log("Delete testimonial", id);
-    closeDeleteModal();
-    navigate("/testimonials");
+  useEffect(() => {
+    if (id) {
+      loadTestimonial(Number(id));
+    }
+  }, [id]);
+
+  const loadTestimonial = async (testimonialId: number) => {
+    try {
+      setLoading(true);
+      const data = await fetchTestimonial(testimonialId);
+      setTestimonial(data);
+    } catch (err) {
+      console.error("Failed to load testimonial", err);
+      alert("Failed to load testimonial or it does not exist.");
+      navigate("/testimonials");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleDeleteConfirm = async () => {
+    if (!id) return;
+    try {
+      setIsDeleting(true);
+      await deleteTestimonial(Number(id));
+      closeDeleteModal();
+      navigate("/testimonials");
+    } catch (err: any) {
+      console.error("Failed to delete testimonial", err);
+      alert(err.response?.data?.message || "Failed to delete testimonial");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (loading || !testimonial) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <p className="text-gray-500">Loading testimonial...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <PageMeta
-        title={`${testimonial.authorName} | StudyCafe Admin`}
+        title={`${testimonial.author_name} | StudyCafe Admin`}
         description="View testimonial for studycafe.in"
       />
       <PageBreadcrumb
-        pageTitle={testimonial.authorName}
+        pageTitle={testimonial.author_name}
         compact
         actions={
           <div className="flex items-center gap-2">
@@ -55,9 +87,10 @@ export default function TestimonialView() {
               <button
                 type="button"
                 onClick={openDeleteModal}
-                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-error-500 shadow-theme-xs hover:bg-error-600"
+                disabled={isDeleting}
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-error-500 shadow-theme-xs hover:bg-error-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </RequirePermission>
           </div>
@@ -69,10 +102,10 @@ export default function TestimonialView() {
           <div className="space-y-4">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Quote
+                Quote / Content
               </p>
               <p className="mt-1 text-gray-800 dark:text-white/90 italic">
-                "{testimonial.quote}"
+                "{testimonial.content}"
               </p>
             </div>
             <div>
@@ -80,7 +113,7 @@ export default function TestimonialView() {
                 Author
               </p>
               <p className="text-gray-800 dark:text-white/90">
-                {testimonial.authorName}
+                {testimonial.author_name}
               </p>
             </div>
             <div>
@@ -88,8 +121,26 @@ export default function TestimonialView() {
                 Role / Designation
               </p>
               <p className="text-gray-800 dark:text-white/90">
-                {testimonial.authorRole}
+                {testimonial.author_role}
               </p>
+            </div>
+            <div className="flex gap-10">
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Rating
+                </p>
+                <p className="text-gray-800 dark:text-white/90">
+                  {testimonial.rating || "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Sort Order
+                </p>
+                <p className="text-gray-800 dark:text-white/90">
+                  {testimonial.sort_order}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -100,7 +151,7 @@ export default function TestimonialView() {
         onClose={closeDeleteModal}
         onConfirm={handleDeleteConfirm}
         title="Delete Testimonial"
-        itemName={testimonial.authorName}
+        itemName={testimonial.author_name}
       />
     </>
   );

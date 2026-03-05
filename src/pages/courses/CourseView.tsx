@@ -7,7 +7,6 @@ import {
   fetchCourse,
   fetchCourseSessions,
   updateRecording as updateRecordingApi,
-  addRecording as addRecordingApi,
   type Course,
   type BatchRecord,
   type RecordingRecord,
@@ -116,6 +115,9 @@ function RecordingRow({
           {recording.source && (
             <span className="text-gray-500 dark:text-gray-400">({recording.source})</span>
           )}
+          <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${recording.is_visible ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}>
+            {recording.is_visible ? "✅ Visible" : "🔒 Hidden"}
+          </span>
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -129,149 +131,108 @@ function RecordingRow({
   );
 }
 
-function AddRecordingForm({ sessionId, onAdded }: { sessionId: number; onAdded: () => void }) {
-  const [show, setShow] = useState(false);
-  const [url, setUrl] = useState("");
-  const [source, setSource] = useState("");
-  const [saving, setSaving] = useState(false);
 
-  const handleAdd = async () => {
-    if (!url.trim()) return;
-    setSaving(true);
-    try {
-      await addRecordingApi(sessionId, { url: url.trim(), source: source || null });
-      onAdded();
-      setUrl("");
-      setSource("");
-      setShow(false);
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  if (!show) {
-    return (
-      <button
-        type="button"
-        onClick={() => setShow(true)}
-        className="text-sm text-brand-600 hover:underline dark:text-brand-400"
-      >
-        + Add recording link
-      </button>
-    );
-  }
+function BatchAccordionItem({ batch, onRecordingUpdated }: { batch: BatchRecord, onRecordingUpdated: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="flex flex-wrap items-center gap-2 py-1.5 text-sm">
-      <input
-        type="url"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Recording URL"
-        className="min-w-[200px] rounded border border-gray-300 bg-white px-2 py-1 dark:border-gray-600 dark:bg-gray-800"
-      />
-      <input
-        type="text"
-        value={source}
-        onChange={(e) => setSource(e.target.value)}
-        placeholder="Source (optional)"
-        className="w-24 rounded border border-gray-300 bg-white px-2 py-1 dark:border-gray-600 dark:bg-gray-800"
-      />
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <button
-        type="button"
-        onClick={handleAdd}
-        disabled={saving || !url.trim()}
-        className="rounded bg-brand-500 px-2 py-1 text-white hover:bg-brand-600 disabled:opacity-50"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-gray-50 dark:bg-gray-800 px-4 py-3 flex items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
       >
-        {saving ? "Adding..." : "Add"}
+        <span className="font-medium text-sm text-gray-800 dark:text-white">{batch.name}</span>
+        <span className="text-xs text-gray-500 ml-2">{batch.sessions.length} session{batch.sessions.length !== 1 ? 's' : ''}</span>
+
+        {batch.start_date && (
+          <span className="text-xs text-gray-400 ml-auto">
+            {new Date(batch.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {batch.end_date && ` → ${new Date(batch.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+          </span>
+        )}
+        <svg
+          className={`ml-3 h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
-      <button type="button" onClick={() => setShow(false)} className="rounded border px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
-        Cancel
-      </button>
+
+      {isOpen && (
+        <div className="divide-y divide-gray-100 dark:divide-gray-700 border-t border-gray-200 dark:border-gray-700">
+          {batch.sessions.length === 0 && (
+            <p className="px-4 py-3 text-sm text-gray-400 italic bg-white dark:bg-transparent">No sessions in this batch.</p>
+          )}
+          {batch.sessions.map((session) => (
+            <div key={session.id} className="px-4 py-3 bg-white dark:bg-transparent">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="inline-flex size-5 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                  {session.day_number}
+                </span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">
+                  {session.title || `Day ${session.day_number}`}
+                </span>
+                {session.scheduled_at && (
+                  <span className="text-xs text-gray-400 ml-2">
+                    📅 {new Date(session.scheduled_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  </span>
+                )}
+                {session.meet_link && (
+                  <a href={session.meet_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline ml-auto">🔗 Meet</a>
+                )}
+              </div>
+              {session.recordings && session.recordings.length > 0 && (
+                <div className="mt-2 pl-7 space-y-1.5">
+                  {session.recordings.map((rec) => (
+                    <RecordingRow key={rec.id} recording={rec} onUpdated={onRecordingUpdated} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-/** Single section: curriculum sections with day-wise recording links (no separate Batches & Recordings). */
-function CurriculumAndRecordings({
-  curriculum,
+/** Direct listing of batches → sessions → recordings without day_number matching */
+function BatchesAndRecordings({
   batches,
   loadingSessions,
   onRecordingUpdated,
 }: {
-  curriculum: any[];
   batches: BatchRecord[];
   loadingSessions: boolean;
   onRecordingUpdated: () => void;
 }) {
-  const sessionsWithBatch = batches.flatMap((b) =>
-    b.sessions.map((s) => ({ ...s, batchName: b.name }))
-  );
-  const dayNumbers = [...new Set(sessionsWithBatch.map((s) => s.day_number))].sort((a, b) => a - b);
-  const maxDayFromSessions = dayNumbers.length ? Math.max(...dayNumbers) : 0;
-  const dayCount = Math.max(curriculum.length, maxDayFromSessions, 1);
-  const hasCurriculum = curriculum.length > 0;
-  const hasSessions = sessionsWithBatch.length > 0;
-
   if (loadingSessions) {
     return (
-      <Section title="Curriculum & Recordings">
+      <Section title="Batches & Recordings">
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       </Section>
     );
   }
 
-  if (!hasCurriculum && !hasSessions) {
+  const totalRecordings = batches.reduce((t, b) => t + b.sessions.reduce((s, sess) => s + (sess.recordings?.length ?? 0), 0), 0);
+
+  if (batches.length === 0) {
     return (
-      <Section title="Curriculum & Recordings">
+      <Section title="Batches & Recordings">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Add curriculum (course edit) and batches/sessions to show day-wise content and recording links here.
+          No batches yet. <a href="/courses/live-sessions" className="text-brand-500 hover:underline">Go to Live Sessions</a> to create batches and sessions.
         </p>
       </Section>
     );
   }
 
   return (
-    <Section title={`Curriculum & Recordings${hasCurriculum ? ` (${dayCount} day${dayCount !== 1 ? "s" : ""})` : ""}`}>
-      <div className="divide-y divide-gray-200 dark:divide-gray-800">
-        {Array.from({ length: dayCount }, (_, i) => i + 1).map((dayNum) => {
-          const curriculumItem = curriculum[dayNum - 1];
-          const sessionsForDay = sessionsWithBatch.filter((s) => s.day_number === dayNum);
-          const title = curriculumItem?.title || `Day ${dayNum}`;
-          return (
-            <div key={dayNum} className="py-4 first:pt-0 last:pb-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium text-gray-800 dark:text-white/90">
-                  {hasCurriculum ? `Day ${dayNum}: ${title}` : title}
-                </p>
-                {curriculumItem?.minutes != null && (
-                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                    {curriculumItem.minutes} min
-                  </span>
-                )}
-              </div>
-              {curriculumItem?.description && (
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{curriculumItem.description}</p>
-              )}
-              <div className="mt-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1.5">
-                {sessionsForDay.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No recording link for this day yet. Add a session with this day number in a batch to attach recordings.</p>
-                ) : (
-                  sessionsForDay.map((session) => (
-                    <div key={session.id}>
-                      {sessionsWithBatch.length > 1 && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{session.batchName} · </span>
-                      )}
-                      {session.recordings.map((rec) => (
-                        <RecordingRow key={rec.id} recording={rec} onUpdated={onRecordingUpdated} />
-                      ))}
-                      {/* {!session.recordings.length && session.recordings.length > 1 && <AddRecordingForm sessionId={session.id} onAdded={onRecordingUpdated} />} */}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <Section title={`Batches & Recordings (${batches.length} batch${batches.length !== 1 ? 'es' : ''}, ${totalRecordings} recording${totalRecordings !== 1 ? 's' : ''})`}>
+      <div className="space-y-4">
+        {batches.map((batch) => (
+          <BatchAccordionItem key={batch.id} batch={batch} onRecordingUpdated={onRecordingUpdated} />
+        ))}
       </div>
     </Section>
   );
@@ -394,9 +355,49 @@ export default function CourseView() {
           </Section>
         )}
 
-        {/* Curriculum & Recordings: one section, day-wise curriculum + recording links */}
-        <CurriculumAndRecordings
-          curriculum={curriculum}
+        {/* Curriculum */}
+        {curriculum.length > 0 && (
+          <Section title={`Curriculum (${curriculum.length} items)`}>
+            <div className="space-y-4">
+              {curriculum.map((item: any, i: number) => (
+                <div key={i} className="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="font-medium text-gray-800 dark:text-white/90">{item.title}</h4>
+                      {item.description && (
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                    {item.minutes && (
+                      <span className="shrink-0 text-sm font-medium text-brand-600 dark:text-brand-400">
+                        {item.minutes} {item.minutes === "1" ? "min" : "mins"}
+                      </span>
+                    )}
+                  </div>
+                  {(item.video || (item.files && item.files.length > 0)) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {item.video && (
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-400/20">
+                          ▶ Video ID: {item.video}
+                        </span>
+                      )}
+                      {item.files && item.files.map((_: any, fileIdx: number) => (
+                        <span key={fileIdx} className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-400/20">
+                          📎 Attached File
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Batches & Recordings */}
+        <BatchesAndRecordings
           batches={batches}
           loadingSessions={loadingSessions}
           onRecordingUpdated={loadSessions}

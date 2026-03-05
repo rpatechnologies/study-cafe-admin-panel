@@ -1,74 +1,46 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
+import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
 import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_SEO_CREATE, PERM_SEO_EDIT, PERM_SEO_DELETE } from "../../constants/permissions";
+import { fetchSeoMetadata, deleteSeoMetadata, type SEOMetadata } from "../../api/seo";
+import { withClientPagination } from "../../utils/dataTableUtils";
 
-export interface SEOMetadata {
-  id: number;
-  pageName: string;
-  pageSlug: string;
-  metaTitle: string;
-  metaDescription: string;
-  robots: string;
-}
-
-const mockSEOMetadata: SEOMetadata[] = [
-  {
-    id: 1,
-    pageName: "Home",
-    pageSlug: "/",
-    metaTitle: "StudyCafe – CA, CS, CWA | GST, Income Tax & Professional Courses",
-    metaDescription:
-      "Studycafe.in – Your trusted platform for CA, CS, CWA exam preparation, GST, Income Tax, and Business News.",
-    robots: "index, follow",
-  },
-  {
-    id: 2,
-    pageName: "About",
-    pageSlug: "/about",
-    metaTitle: "About StudyCafe | CA, CS, CWA Courses",
-    metaDescription:
-      "Learn about StudyCafe – your trusted platform for CA, CS, CWA exam preparation.",
-    robots: "index, follow",
-  },
-  {
-    id: 3,
-    pageName: "Privacy Policy",
-    pageSlug: "/privacy-policy",
-    metaTitle: "Privacy Policy | StudyCafe",
-    metaDescription:
-      "Read our privacy policy to understand how we collect, use, and protect your information.",
-    robots: "index, follow",
-  },
-];
+// Wrap list API in client-side pagination adapter
+const fetchSeoMetadataPaginated = withClientPagination(
+  fetchSeoMetadata,
+  ["pageName", "pageSlug", "metaTitle", "metaDescription"]
+);
 
 export default function SEOMetadataList() {
-  const [entries, setEntries] = useState<SEOMetadata[]>(mockSEOMetadata);
   const [deleteTarget, setDeleteTarget] = useState<SEOMetadata | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const dataTableRef = useRef<DataTableRef>(null);
 
-  const handleDeleteClick = (entry: SEOMetadata) => {
+  const handleDeleteClick = useCallback((entry: SEOMetadata) => {
     setDeleteTarget(entry);
     openDeleteModal();
-  };
+  }, [openDeleteModal]);
 
-  const handleDeleteConfirm = () => {
-    if (deleteTarget) {
-      setEntries((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteSeoMetadata(deleteTarget.id);
+      dataTableRef.current?.refetch();
       setDeleteTarget(null);
       closeDeleteModal();
+    } catch (err: unknown) {
+      console.error("Failed to delete SEO metadata", err);
+      alert((err as any)?.response?.data?.message || "Failed to delete SEO metadata");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -76,6 +48,93 @@ export default function SEOMetadataList() {
     setDeleteTarget(null);
     closeDeleteModal();
   };
+
+  const columns = [
+    {
+      key: "pageName",
+      header: "Page",
+      sortable: true,
+      render: (row: SEOMetadata) => (
+        <div>
+          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+            {row.pageName}
+          </span>
+          <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
+            {row.pageSlug}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "metaTitle",
+      header: "Meta Title",
+      sortable: true,
+      render: (row: SEOMetadata) => (
+        <div className="max-w-xs">
+          <span className="line-clamp-2">{row.metaTitle}</span>
+        </div>
+      ),
+    },
+    {
+      key: "metaDescription",
+      header: "Meta Description",
+      sortable: false,
+      render: (row: SEOMetadata) => (
+        <div className="max-w-md text-gray-500 dark:text-gray-400">
+          <span className="line-clamp-2">{row.metaDescription}</span>
+        </div>
+      ),
+    },
+    {
+      key: "robots",
+      header: "Robots",
+      sortable: true,
+      render: (row: SEOMetadata) => (
+        <span className="text-gray-500 dark:text-gray-400">
+          {row.robots}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "end" as const,
+      sortable: false,
+      render: (row: SEOMetadata) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            to={`/seo-metadata/${row.id}`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            title="View"
+          >
+            <EyeIcon className="size-4 shrink-0 fill-current" />
+            View
+          </Link>
+          <RequirePermission permissions={[PERM_SEO_EDIT]} fallback={null}>
+            <Link
+              to={`/seo-metadata/${row.id}/edit`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="Edit"
+            >
+              <PencilIcon className="size-4 shrink-0 fill-current" />
+              Edit
+            </Link>
+          </RequirePermission>
+          <RequirePermission permissions={[PERM_SEO_DELETE]} fallback={null}>
+            <button
+              type="button"
+              onClick={() => handleDeleteClick(row)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+              title="Delete"
+            >
+              <TrashBinIcon className="size-4 shrink-0 fill-current" />
+              Delete
+            </button>
+          </RequirePermission>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -97,104 +156,18 @@ export default function SEOMetadataList() {
         }
       />
       <div className="space-y-6">
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="max-w-full overflow-x-auto">
-            <Table>
-              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Page
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Meta Title
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Meta Description
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Robots
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400"
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="px-5 py-4 text-start">
-                      <div>
-                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                          {entry.pageName}
-                        </span>
-                        <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                          {entry.pageSlug}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-800 text-theme-sm dark:text-white/90 max-w-xs">
-                      <span className="line-clamp-2">{entry.metaTitle}</span>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400 max-w-md">
-                      <span className="line-clamp-2">{entry.metaDescription}</span>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {entry.robots}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-end">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/seo-metadata/${entry.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                          title="View"
-                        >
-                          <EyeIcon className="size-4 shrink-0 fill-current" />
-                          View
-                        </Link>
-                        <RequirePermission permissions={[PERM_SEO_EDIT]} fallback={null}>
-                          <Link
-                            to={`/seo-metadata/${entry.id}/edit`}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                            title="Edit"
-                          >
-                            <PencilIcon className="size-4 shrink-0 fill-current" />
-                            Edit
-                          </Link>
-                        </RequirePermission>
-                        <RequirePermission permissions={[PERM_SEO_DELETE]} fallback={null}>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteClick(entry)}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
-                            title="Delete"
-                          >
-                            <TrashBinIcon className="size-4 shrink-0 fill-current" />
-                            Delete
-                          </button>
-                        </RequirePermission>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <DataTable<SEOMetadata>
+          ref={dataTableRef}
+          columns={columns}
+          fetchData={fetchSeoMetadataPaginated}
+          initialPageSize={10}
+          pageSizeOptions={[10, 20, 50, 100]}
+          enableSearch
+          enableSorting
+          enablePagination
+          searchPlaceholder="Search SEO metadata…"
+          emptyMessage="No SEO metadata found."
+        />
       </div>
 
       <ConfirmDeleteModal
@@ -203,6 +176,7 @@ export default function SEOMetadataList() {
         onConfirm={handleDeleteConfirm}
         title="Delete SEO Metadata"
         itemName={deleteTarget?.pageName}
+        isLoading={deleting}
       />
     </>
   );

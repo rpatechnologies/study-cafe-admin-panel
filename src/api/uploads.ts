@@ -7,7 +7,11 @@ import { api } from "./axios";
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await api.post<{ url: string }>("/admin/upload", formData);
+  const res = await api.post<{ url: string }>("/admin/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   const url = (res.data && typeof res.data === "object" && "url" in res.data)
     ? (res.data as { url: string }).url
     : null;

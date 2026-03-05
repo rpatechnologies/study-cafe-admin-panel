@@ -21,6 +21,7 @@ export interface SEOMetadataFormData {
 interface SEOMetadataFormProps {
   mode: "create" | "edit";
   defaultValues?: Partial<SEOMetadataFormData>;
+  loading?: boolean;
   onSubmit: (data: SEOMetadataFormData) => void;
 }
 
@@ -33,6 +34,7 @@ const emptyFormData: SEOMetadataFormData = {
 export default function SEOMetadataForm({
   mode,
   defaultValues,
+  loading = false,
   onSubmit,
 }: SEOMetadataFormProps) {
   const [formData, setFormData] = useState<SEOMetadataFormData>({
@@ -77,6 +79,7 @@ export default function SEOMetadataForm({
                 setFormData((prev) => ({ ...prev, pageName: e.target.value }))
               }
               placeholder="e.g. Home, About, Privacy Policy"
+              required
             />
           </div>
           <div>
@@ -87,6 +90,7 @@ export default function SEOMetadataForm({
                 setFormData((prev) => ({ ...prev, pageSlug: e.target.value }))
               }
               placeholder="e.g. /, /about, /privacy-policy"
+              required
             />
           </div>
         </div>
@@ -105,9 +109,10 @@ export default function SEOMetadataForm({
       <div className="flex gap-3">
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitLabel}
+          {loading ? "Saving..." : submitLabel}
         </button>
         <Link to="/seo-metadata">
           <Button variant="outline" size="sm">

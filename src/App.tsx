@@ -67,6 +67,7 @@ import CourseCreate from "./pages/courses/CourseCreate";
 import CourseEdit from "./pages/courses/CourseEdit";
 import CoursePageSettings from "./pages/courses/CoursePageSettings";
 import CoursePreview from "./pages/courses/CoursePreview";
+import LiveSessions from "./pages/courses/LiveSessions";
 import OrderList from "./pages/orders/OrderList";
 import OrderView from "./pages/orders/OrderView";
 
@@ -150,6 +151,9 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<CoursePreview />} />
+          </Route>
+          <Route path="/live-sessions" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<LiveSessions />} />
           </Route>
 
           {/* Orders */}

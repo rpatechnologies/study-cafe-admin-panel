@@ -72,6 +72,7 @@ export interface RecordingRecord {
   id: number;
   url: string;
   source: string | null;
+  is_visible: boolean;
 }
 
 export interface SessionRecord {
@@ -90,7 +91,15 @@ export interface BatchRecord {
   start_date: string | null;
   end_date: string | null;
   meet_link: string | null;
+  created_at: string | null;
   sessions: SessionRecord[];
+}
+
+export interface BatchEnrollmentRecord {
+  id: number;
+  batch_id: number;
+  user_id: number;
+  enrolled_at: string | null;
 }
 
 export async function fetchCourseSessions(courseId: string): Promise<BatchRecord[]> {
@@ -102,12 +111,69 @@ export async function fetchCourseSessions(courseId: string): Promise<BatchRecord
   }
 }
 
-export async function updateRecording(recordingId: number, payload: { url?: string; source?: string | null }): Promise<RecordingRecord> {
+export async function updateRecording(recordingId: number, payload: { url?: string; source?: string | null; is_visible?: boolean }): Promise<RecordingRecord> {
   const res = await api.put<RecordingRecord>(`/admin/recordings/${recordingId}`, payload);
   return res.data;
 }
 
-export async function addRecording(sessionId: number, payload: { url: string; source?: string | null }): Promise<RecordingRecord> {
+export async function addRecording(sessionId: number, payload: { url: string; source?: string | null; is_visible?: boolean }): Promise<RecordingRecord> {
   const res = await api.post<RecordingRecord>(`/admin/sessions/${sessionId}/recordings`, payload);
   return res.data;
+}
+
+export async function toggleRecordingVisibility(recordingId: number, isVisible: boolean): Promise<RecordingRecord> {
+  const res = await api.put<RecordingRecord>(`/admin/recordings/${recordingId}/visibility`, { is_visible: isVisible });
+  return res.data;
+}
+
+export async function deleteRecording(recordingId: number): Promise<void> {
+  await api.delete(`/admin/recordings/${recordingId}`);
+}
+
+export async function deleteSession(sessionId: number): Promise<void> {
+  await api.delete(`/admin/sessions/${sessionId}`);
+}
+
+export async function deleteBatch(batchId: number): Promise<void> {
+  await api.delete(`/admin/batches/${batchId}`);
+}
+
+export async function createBatch(courseId: string, payload: { name?: string | null; start_date?: string | null; end_date?: string | null; meet_link?: string | null }): Promise<BatchRecord> {
+  const res = await api.post<BatchRecord>(`/admin/courses/${courseId}/batches`, payload);
+  return res.data;
+}
+
+export async function updateBatch(batchId: number, payload: Partial<{ name: string; start_date: string | null; end_date: string | null; meet_link: string | null }>): Promise<BatchRecord> {
+  const res = await api.put<BatchRecord>(`/admin/batches/${batchId}`, payload);
+  return res.data;
+}
+
+export async function createSession(batchId: number, payload: { title: string; day_number?: number; scheduled_at?: string | null; meet_link?: string | null }): Promise<SessionRecord> {
+  const res = await api.post<SessionRecord>(`/admin/batches/${batchId}/sessions`, payload);
+  return res.data;
+}
+
+export async function updateSession(sessionId: number, payload: Partial<{ title: string; day_number: number; scheduled_at: string | null; meet_link: string | null }>): Promise<SessionRecord> {
+  const res = await api.put<SessionRecord>(`/admin/sessions/${sessionId}`, payload);
+  return res.data;
+}
+
+// ─── Batch Enrollments ──────────────────────────────────────────────
+
+export async function fetchBatchEnrollments(batchId: number): Promise<BatchEnrollmentRecord[]> {
+  try {
+    const res = await api.get<BatchEnrollmentRecord[]>(`/admin/batches/${batchId}/enrollments`);
+    return Array.isArray(res.data) ? res.data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addBatchEnrollment(batchId: number, userId: number): Promise<BatchEnrollmentRecord> {
+  const res = await api.post<BatchEnrollmentRecord>(`/admin/batches/${batchId}/enrollments`, { user_id: userId });
+  return res.data;
+}
+
+export async function removeBatchEnrollment(enrollmentId: number): Promise<void> {
+  await api.delete(`/admin/batch-enrollments/${enrollmentId}`);
 }
